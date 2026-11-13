@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ผลการฝึก Spelling Bee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@700&family=Bricolage+Grotesque:opsz,wght@12..96,800&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+:root{--paper:#fbfaf6;--sheet:#fff;--ink:#1d2541;--muted:#5d6480;--amber:#c98a06;--amber-soft:#fff3d1;--line:#e4e2da;--ok:#2e7d4f;--ok-soft:#e3f3e8;--bad:#b83a34;--bad-soft:#fbe6e4;--chip:#f0eee6;
+  --f-display:"Bricolage Grotesque",system-ui,sans-serif;--f-body:"IBM Plex Sans Thai",system-ui,sans-serif;--f-word:"Andika",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root{--paper:#14182a;--sheet:#1c2137;--ink:#eceef7;--muted:#a3a9c4;--amber:#f2b632;--amber-soft:#3a3016;--line:#2c3250;--ok:#6fcf97;--ok-soft:#173326;--bad:#f08a84;--bad-soft:#3d1c1c;--chip:#262c47;color-scheme:dark}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body);padding:16px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:14px}
+h1{font:800 clamp(22px,4vw,30px) var(--f-display);margin:0}h1 b{color:var(--amber)}
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:16px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.spacer{flex:1}
+input,select{font:16px var(--f-body);color:var(--ink);background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:46px}
+.btn{appearance:none;border:1px solid var(--line);background:var(--sheet);color:var(--ink);font:600 15px var(--f-body);min-height:46px;padding:8px 16px;border-radius:12px;cursor:pointer}
+.primary{background:var(--amber);border-color:var(--amber);color:#1d1400}
+.muted{color:var(--muted);font-size:13.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:14px;padding:12px}.card b{display:block;font:800 26px var(--f-display)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none}tbody tr{cursor:pointer}tbody tr:hover{background:var(--chip)}
+.w{font:700 15px var(--f-word);display:inline-block;padding:2px 8px;margin:3px;border-radius:8px;background:var(--bad-soft)}
+.err{color:var(--bad)}
+dialog{border:1px solid var(--line);border-radius:18px;background:var(--sheet);color:var(--ink);width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto}
+dialog::backdrop{background:rgba(10,14,30,.45)}
+</style></head><body>
+<div class="wrap">
+  <div class="row"><h1>ผลการฝึก Spelling <b>Bee</b></h1><span class="spacer"></span><a class="muted" href="/">← กลับไปหน้าฝึก</a></div>
+
+  <div class="panel" id="gate">
+    <p style="margin:0 0 10px">ใส่รหัสครูเพื่อดูผลของนักเรียน</p>
+    <div class="row"><input type="password" id="pin" inputmode="numeric" placeholder="รหัสครู" autocomplete="off"><button class="btn primary" id="go">เข้าดู</button></div>
+    <p class="err" id="gErr" hidden></p>
+  </div>
+
+  <div id="main" hidden>
+    <div class="row" style="margin-bottom:12px">
+      <select id="fCls"><option value="">ทุกชั้น</option><option>ม.1</option><option>ม.2</option><option>ม.3</option><option>ครู/อื่นๆ</option></select>
+      <input type="search" id="q" placeholder="🔎 ค้นหาชื่อ" style="flex:1;min-width:140px">
+      <button class="btn" id="reload">🔄 รีเฟรช</button><button class="btn" id="csv">⬇️ ดาวน์โหลด CSV</button>
+    </div>
+    <div class="cards" id="cards" style="margin-bottom:12px"></div>
+    <div class="tbl"><table><thead><tr>
+      <th data-s="name">ชื่อ</th><th data-s="cls">ชั้น</th><th data-s="written">เขียนแล้ว (คำ)</th><th data-s="acc">ถูก %</th><th data-s="wrong">ต้องทบทวน</th><th data-s="test">สอบล่าสุด</th><th data-s="best">สอบสูงสุด</th><th data-s="updated">ใช้งานล่าสุด</th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+    <p class="muted">กดที่ชื่อนักเรียนเพื่อดูคำที่ต้องทบทวนและผลสอบ · กดหัวตารางเพื่อเรียงลำดับ</p>
+  </div>
+</div>
+<dialog id="dd"><div id="ddBody"></div><div class="row" style="margin-top:14px"><button class="btn" id="del" style="color:var(--bad)">ลบข้อมูลนักเรียนคนนี้</button><span class="spacer"></span><button class="btn primary" id="ddClose">ปิด</button></div></dialog>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let pin='',rows=[],sortK='updated',sortDir=-1,cur=null;
+try{pin=sessionStorage.getItem('tpin')||''}catch(e){}
+const fmt=ms=>ms?new Date(ms).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
+function summary(r){const s=r.state||{},t=s.tot||{ok:0,bad:0},tests=s.tests||[];const n=t.ok+t.bad;
+  return{key:r.key,name:r.name,cls:r.cls,updated:r.updated||0,written:(s.seen||[]).length,acc:n?Math.round(t.ok/n*100):null,wrong:(s.wrong||[]).length,
+    test:tests.length?tests[tests.length-1].s:null,best:tests.length?Math.max(...tests.map(x=>x.s)):null,wrongList:s.wrong||[],tests}}
+async function load(){
+  $('gErr').hidden=true;
+  try{const r=await fetch('/api/teacher',{headers:{'x-pin':pin},cache:'no-store'});
+    if(r.status===401){$('gErr').textContent='รหัสครูไม่ถูกต้อง';$('gErr').hidden=false;$('gate').hidden=false;$('main').hidden=true;return}
+    if(!r.ok)throw 0;const j=await r.json();rows=j.students.map(summary);
+    try{sessionStorage.setItem('tpin',pin)}catch(e){}
+    $('gate').hidden=true;$('main').hidden=false;render()}
+  catch(e){$('gErr').textContent='โหลดข้อมูลไม่ได้ ลองใหม่อีกครั้ง';$('gErr').hidden=false}
+}
+function view(){const c=$('fCls').value,q=$('q').value.trim().toLowerCase();
+  return rows.filter(r=>(!c||r.cls===c)&&(!q||r.name.toLowerCase().includes(q))).sort((a,b)=>{const x=a[sortK],y=b[sortK];if(x===y)return 0;if(x==null)return 1;if(y==null)return -1;return(x>y?1:-1)*sortDir})}
+function render(){const v=view();
+  const act=v.filter(r=>Date.now()-r.updated<7*864e5).length,avgT=v.filter(r=>r.test!=null);
+  $('cards').innerHTML=[['นักเรียน',v.length],['ใช้งานใน 7 วัน',act],['คำที่เขียนรวม',v.reduce((a,r)=>a+r.written,0)],['คะแนนสอบล่าสุดเฉลี่ย',avgT.length?Math.round(avgT.reduce((a,r)=>a+r.test,0)/avgT.length):'-']]
+    .map(([k,n])=>`<div class="card"><b>${n}</b><span class="muted">${k}</span></div>`).join('');
+  $('tb').innerHTML=v.length?v.map(r=>`<tr data-k="${esc(r.key)}"><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.written}</td><td>${r.acc==null?'-':r.acc+'%'}</td><td>${r.wrong}</td><td>${r.test==null?'-':r.test}</td><td>${r.best==null?'-':r.best}</td><td>${fmt(r.updated)}</td></tr>`).join('')
+    :`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">ยังไม่มีนักเรียนบันทึกข้อมูล</td></tr>`}
+$('go').onclick=()=>{pin=$('pin').value.trim();load()};
+$('pin').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
+$('reload').onclick=load;$('fCls').onchange=render;$('q').oninput=render;
+document.querySelector('thead').onclick=e=>{const th=e.target.closest('th');if(!th)return;const k=th.dataset.s;if(sortK===k)sortDir=-sortDir;else{sortK=k;sortDir=k==='name'||k==='cls'?1:-1}render()};
+$('tb').onclick=e=>{const tr=e.target.closest('tr[data-k]');if(!tr)return;cur=rows.find(r=>r.key===tr.dataset.k);if(!cur)return;
+  $('ddBody').innerHTML=`<h2 style="font:800 22px var(--f-display);margin:0 0 4px">${esc(cur.name)}</h2><p class="muted" style="margin:0 0 12px">${esc(cur.cls)} · ใช้งานล่าสุด ${fmt(cur.updated)}</p>
+  <p style="margin:0 0 4px"><b>คำที่ต้องทบทวน (${cur.wrongList.length})</b></p><div>${cur.wrongList.map(w=>`<span class="w">${esc(w)}</span>`).join('')||'<span class="muted">ไม่มี</span>'}</div>
+  <p style="margin:14px 0 4px"><b>ผลสอบ 20 คำ</b></p>${cur.tests.length?cur.tests.slice().reverse().map(t=>`<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0"><b style="min-width:70px">${t.s}/100</b><span class="muted">${fmt(t.d)}</span><span class="muted">${esc(t.lv||'')}</span></div>`).join(''):'<span class="muted">ยังไม่เคยสอบ</span>'}`;
+  try{$('dd').showModal()}catch(_){$('dd').setAttribute('open','')}};
+$('ddClose').onclick=()=>$('dd').close();
+$('del').onclick=async()=>{if(!cur)return;if($('del').dataset.sure!=='1'){$('del').dataset.sure='1';$('del').textContent='กดอีกครั้งเพื่อยืนยันการลบ';return}
+  $('del').dataset.sure='';$('del').textContent='ลบข้อมูลนักเรียนคนนี้';
+  const r=await fetch('/api/teacher?key='+encodeURIComponent(cur.key),{method:'DELETE',headers:{'x-pin':pin}});$('dd').close();if(r.ok)load()};
+$('dd').addEventListener('close',()=>{$('del').dataset.sure='';$('del').textContent='ลบข้อมูลนักเรียนคนนี้'});
+$('csv').onclick=()=>{const v=view();const head=['ชื่อ','ชั้น','เขียนแล้ว','ถูก%','ต้องทบทวน','สอบล่าสุด','สอบสูงสุด','ใช้งานล่าสุด','คำที่ต้องทบทวน'];
+  const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
+  const csv='﻿'+[head.map(q).join(',')].concat(v.map(r=>[r.name,r.cls,r.written,r.acc??'',r.wrong,r.test??'',r.best??'',fmt(r.updated),r.wrongList.join(' ')].map(q).join(','))).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='spelling-bee-results.csv';a.click()};
+if(pin)load();
+})();
+</script>
+</body></html>
