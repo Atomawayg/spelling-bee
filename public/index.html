@@ -415,7 +415,7 @@ function sayTTS(t,rateMul,done){
 function stopSpeak(){speakToken++;if(synth)synth.cancel();stopClip()}
 const cW=x=>({c:'w'+x.i,t:x.w});
 const cS=x=>({c:'s'+x.i,t:sentFor(x)});
-const cP=x=>({c:'P_'+x.pos.toLowerCase().replace(/[^a-z]/g,''),t:'It is a '+posName(x.pos)+'.'});
+const cP=x=>({c:'P_'+x.pos.toLowerCase().replace(/[^a-z]/g,''),t:'It is '+(/^[aeiou]/.test(posName(x.pos))?'an ':'a ')+posName(x.pos)+'.'});
 const cPh=x=>({c:'p'+x.i,t:'Your word is '+x.w+'.'});
 $('voiceTest').onclick=()=>speak([{c:'T_test',t:'accommodation. Remember to book your accommodation early.'}]);
 const sentFor=x=>x.sent||('The word is '+x.w+'.');
@@ -592,6 +592,8 @@ const MODE='cloud';
 if(MODE!=='cloud'){window.__sbStart();return}
 const $=id=>document.getElementById(id);
 $('teacherLink').hidden=false;
+// newer voice (generated on the server) replaces the built-in audio index when available
+const audP=(async()=>{try{const c=new AbortController();setTimeout(()=>c.abort(),5000);const r=await fetch('/api/audio/index.json',{signal:c.signal});if(r.ok){const j=await r.json();if(j&&j.f&&j.f.length&&j.c)$('audio').textContent=JSON.stringify(j)}}catch(e){}})();
 const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const clean=s=>s.normalize('NFC').trim().replace(/\s+/g,' ');
 let prof=null,S={},timer=null,dirty=false,busy=false;
@@ -618,6 +620,7 @@ async function login(cls,name){
   stat(ok?'☁️ บันทึกออนไลน์':'⚠️ ออฟไลน์ ใช้ข้อมูลในเครื่องก่อน');
   $('userName').textContent=prof.name.split(' ')[0];$('userBtn').hidden=false;$('userDlgName').textContent=prof.name+' ('+prof.cls+')';
   if(dirty)setTimeout(push,500);
+  await audP;
   window.__sbStart();
 }
 const dlg=$('loginDlg');dlg.addEventListener('cancel',e=>e.preventDefault());
