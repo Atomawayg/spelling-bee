@@ -44,7 +44,7 @@ dialog::backdrop{background:rgba(10,14,30,.45)}
     </div>
     <div class="cards" id="cards" style="margin-bottom:12px"></div>
     <div class="tbl"><table><thead><tr>
-      <th data-s="name">ชื่อ</th><th data-s="cls">ชั้น</th><th data-s="written">เขียนแล้ว (คำ)</th><th data-s="acc">ถูก %</th><th data-s="wrong">ต้องทบทวน</th><th data-s="test">สอบล่าสุด</th><th data-s="best">สอบสูงสุด</th><th data-s="updated">ใช้งานล่าสุด</th>
+      <th data-s="name">ชื่อ</th><th data-s="cls">ชั้น</th><th data-s="written">ฝึกแล้ว (คำ)</th><th data-s="known">จำได้แล้ว</th><th data-s="rounds">รอบที่ทำ</th><th data-s="acc">ถูก %</th><th data-s="wrong">ต้องทบทวน</th><th data-s="test">สอบล่าสุด</th><th data-s="best">สอบสูงสุด</th><th data-s="updated">ใช้งานล่าสุด</th>
     </tr></thead><tbody id="tb"></tbody></table></div>
     <p class="muted">กดที่ชื่อนักเรียนเพื่อดูคำที่ต้องทบทวนและผลสอบ · กดหัวตารางเพื่อเรียงลำดับ</p>
   </div>
@@ -59,7 +59,7 @@ try{pin=sessionStorage.getItem('tpin')||''}catch(e){}
 const fmt=ms=>ms?new Date(ms).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
 const sc=t=>t.m?`${t.s}/${t.m}`:`${Math.round(t.s/5)}/20`;const sv=t=>t.m?t.s/t.m*20:t.s/5;
 function summary(r){const s=r.state||{},t=s.tot||{ok:0,bad:0},tests=s.tests||[];const n=t.ok+t.bad;
-  return{key:r.key,name:r.name,cls:r.cls,updated:r.updated||0,written:(s.seen||[]).length,acc:n?Math.round(t.ok/n*100):null,wrong:(s.wrong||[]).length,
+  return{key:r.key,name:r.name,cls:r.cls,updated:r.updated||0,written:(s.seen||[]).length,known:(s.seen||[]).filter(w=>!(s.wrong||[]).includes(w)&&!(s.learning&&s.learning[w]!=null)).length,rounds:Object.values(s.rounds||{}).reduce((a,x)=>a+((x&&x.hist)||[]).length,0),acc:n?Math.round(t.ok/n*100):null,wrong:(s.wrong||[]).length,
     test:tests.length?sv(tests[tests.length-1]):null,testTxt:tests.length?sc(tests[tests.length-1]):'-',best:tests.length?Math.max(...tests.map(sv)):null,wrongList:s.wrong||[],tests}}
 async function load(){
   $('gErr').hidden=true;
@@ -76,8 +76,8 @@ function render(){const v=view();
   const act=v.filter(r=>Date.now()-r.updated<7*864e5).length,avgT=v.filter(r=>r.test!=null);
   $('cards').innerHTML=[['นักเรียน',v.length],['ใช้งานใน 7 วัน',act],['คำที่เขียนรวม',v.reduce((a,r)=>a+r.written,0)],['คะแนนสอบล่าสุดเฉลี่ย (เต็ม 20)',avgT.length?(avgT.reduce((a,r)=>a+r.test,0)/avgT.length).toFixed(1):'-']]
     .map(([k,n])=>`<div class="card"><b>${n}</b><span class="muted">${k}</span></div>`).join('');
-  $('tb').innerHTML=v.length?v.map(r=>`<tr data-k="${esc(r.key)}"><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.written}</td><td>${r.acc==null?'-':r.acc+'%'}</td><td>${r.wrong}</td><td>${r.testTxt}</td><td>${r.best==null?'-':Math.round(r.best)+'/20'}</td><td>${fmt(r.updated)}</td></tr>`).join('')
-    :`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">ยังไม่มีนักเรียนบันทึกข้อมูล</td></tr>`}
+  $('tb').innerHTML=v.length?v.map(r=>`<tr data-k="${esc(r.key)}"><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.written}</td><td>${r.known}</td><td>${r.rounds}</td><td>${r.acc==null?'-':r.acc+'%'}</td><td>${r.wrong}</td><td>${r.testTxt}</td><td>${r.best==null?'-':Math.round(r.best)+'/20'}</td><td>${fmt(r.updated)}</td></tr>`).join('')
+    :`<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">ยังไม่มีนักเรียนบันทึกข้อมูล</td></tr>`}
 $('go').onclick=()=>{pin=$('pin').value.trim();load()};
 $('pin').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
 $('reload').onclick=load;$('fCls').onchange=render;$('q').oninput=render;
@@ -92,9 +92,9 @@ $('del').onclick=async()=>{if(!cur)return;if($('del').dataset.sure!=='1'){$('del
   $('del').dataset.sure='';$('del').textContent='ลบข้อมูลนักเรียนคนนี้';
   const r=await fetch('/api/teacher?key='+encodeURIComponent(cur.key),{method:'DELETE',headers:{'x-pin':pin}});$('dd').close();if(r.ok)load()};
 $('dd').addEventListener('close',()=>{$('del').dataset.sure='';$('del').textContent='ลบข้อมูลนักเรียนคนนี้'});
-$('csv').onclick=()=>{const v=view();const head=['ชื่อ','ชั้น','เขียนแล้ว','ถูก%','ต้องทบทวน','สอบล่าสุด','สอบสูงสุด','ใช้งานล่าสุด','คำที่ต้องทบทวน'];
+$('csv').onclick=()=>{const v=view();const head=['ชื่อ','ชั้น','ฝึกแล้ว','จำได้แล้ว','รอบที่ทำ','ถูก%','ต้องทบทวน','สอบล่าสุด','สอบสูงสุด','ใช้งานล่าสุด','คำที่ต้องทบทวน'];
   const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
-  const csv='﻿'+[head.map(q).join(',')].concat(v.map(r=>[r.name,r.cls,r.written,r.acc??'',r.wrong,r.testTxt==='-'?'':r.testTxt,r.best==null?'':Math.round(r.best)+'/20',fmt(r.updated),r.wrongList.join(' ')].map(q).join(','))).join('\n');
+  const csv='﻿'+[head.map(q).join(',')].concat(v.map(r=>[r.name,r.cls,r.written,r.known,r.rounds,r.acc??'',r.wrong,r.testTxt==='-'?'':r.testTxt,r.best==null?'':Math.round(r.best)+'/20',fmt(r.updated),r.wrongList.join(' ')].map(q).join(','))).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='spelling-bee-results.csv';a.click()};
 if(pin)load();
 })();

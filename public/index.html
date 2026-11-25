@@ -171,14 +171,28 @@ dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
   #lf .chip{min-height:40px;padding:4px 12px;font-size:14px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+.stepper{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:14px;box-shadow:var(--shadow)}
+.stepper .rn{font:800 18px var(--f-display);margin-right:4px}
+.stepper .rs{appearance:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:600 14.5px var(--f-body);min-height:42px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.stepper .rs.done{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.stepper .rs.cur{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.stepper .rs:disabled{opacity:.45;cursor:default}.stepper .rs.done:disabled{opacity:1}
+.stepper .arr{color:var(--muted);font-weight:700}
+.stepper .hist{flex-basis:100%;font-size:13.5px;color:var(--muted)}
+.ph{font:800 24px var(--f-display);margin:0 0 6px}.pd{margin:0 0 14px;color:var(--muted)}
+.foot{margin-top:4px}.foot .status{font-size:12.5px}
+.st-learning{color:var(--amber)}.st-known{color:var(--ok)}
+.levels{flex-wrap:wrap}.filters{flex-wrap:wrap}
+.stats small{font-size:13px;color:var(--muted);font-weight:600}
+@media (max-width:560px){.stepper .rs{font-size:13.5px;padding:4px 10px;min-height:40px}.stepper .arr{display:none}.levels .lab{display:none}.filters .chip{min-height:38px;padding:4px 11px;font-size:13.5px}}
 </style>
 
 <div class="wrap">
   <header>
     <h1>Spelling <span class="bee">Bee</span> ม.ต้น</h1>
     <div class="stats">
-      <div class="opt"><b id="stTotal">0</b>คำในชุด</div>
-      <div><b id="stDone">0</b>ฝึกวันนี้</div>
+      <div><b><span id="stKnown">0</span><small>/<span id="stTotal">0</span></small></b>จำได้แล้ว</div>
       <div><b id="stWrong">0</b>ต้องทบทวน</div>
     </div>
     <button class="iconbtn" id="userBtn" hidden aria-label="เปลี่ยนผู้ใช้"><span class="i">👤</span><span id="userName">ผู้ใช้</span></button>
@@ -186,139 +200,141 @@ dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
     <button class="iconbtn" id="setBtn" aria-label="ตั้งค่าเสียง"><span class="i">⚙️</span>เสียง</button>
   </header>
 
-  <div class="levels"><span class="lab">ระดับคำ:</span><div class="filters" id="filters" aria-label="เลือกระดับคำ"></div></div>
-  <div class="roundbar" id="roundBar" hidden></div>
-  <div class="row"><span class="status" id="audStat"></span><span class="spacer"></span><span class="status" id="syncStat"></span></div>
+  <div class="levels"><span class="lab">ชุดคำ:</span><div class="filters" id="filters" aria-label="เลือกชุดคำ"></div></div>
   <p class="notice" id="ttsNote" hidden>อุปกรณ์นี้ไม่รองรับเสียงอ่าน ใช้คำอ่านภาษาไทยแทนได้ หรือให้ครูอ่านคำให้</p>
 
   <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" id="tab-write" aria-selected="true"><span class="i">✍️</span>ฝึกเขียน</button>
-    <button class="tab" role="tab" id="tab-learn" aria-selected="false"><span class="i">📖</span>ท่องจำ</button>
-    <button class="tab" role="tab" id="tab-test" aria-selected="false"><span class="i">⏱️</span>สอบ 20 คำ</button>
-    <button class="tab" role="tab" id="tab-list" aria-selected="false"><span class="i">📋</span>รายการคำ</button>
+    <button class="tab" role="tab" id="tab-home" aria-selected="true"><span class="i">🏠</span>ฝึกรอบนี้</button>
+    <button class="tab" role="tab" id="tab-list" aria-selected="false"><span class="i">📋</span>คำศัพท์</button>
   </nav>
 
-  <!-- WRITE -->
-  <section id="v-write" class="panel">
-    <div class="wgrid">
-      <div class="row wtop"><span class="lvl" id="wLvl">B2</span><span class="counter" id="wCount"></span><button class="btn" id="wReset" hidden style="min-height:36px;padding:4px 12px;font-size:13.5px">✓ ครบชุดแล้ว · เริ่มรอบใหม่</button><span class="spacer"></span><span class="counter" id="wScore"></span></div>
+  <div id="v-home">
+    <div class="stepper" id="stepper"></div>
 
-      <div class="step s1">
-        <h3><span class="num">1</span>ฟังคำ <small>ฟังแล้วจำคำให้ได้</small></h3>
-        <button class="btn primary big" id="wPlay">🔊 ฟังคำ (อ่านแบบสนามแข่ง)</button>
-        <button class="btn" id="wWord">🔁 ฟังเฉพาะคำอีกครั้ง</button>
-        <p class="helplab">💡 ตัวช่วย (กดเมื่อไม่แน่ใจ)</p>
-        <div class="helpers">
-          <button class="btn soft" id="wHintPos"><span class="i">🏷️</span>ชนิดคำ</button>
-          <button class="btn soft" id="wHintSent"><span class="i">💬</span>ประโยคตัวอย่าง</button>
-          <button class="btn soft" id="wHintMean"><span class="i">🇹🇭</span>ความหมาย</button>
-          <button class="btn soft" id="wHintRead"><span class="i">🗣️</span>คำอ่านไทย</button>
-        </div>
-        <div class="hint" id="wHint" hidden></div>
+    <!-- STEP 1: LEARN -->
+    <section id="v-learn" class="panel" hidden>
+      <div class="row"><span class="lvl" id="lLvl"></span><span class="counter" id="lCount"></span></div>
+      <div class="word" id="lWord"></div>
+      <div class="meta">
+        <div><span class="read" id="lRead"></span> · <span class="pos" id="lPos"></span></div>
+        <div class="mean" id="lMean"></div>
+        <p class="sent" id="lSent"></p>
+        <div class="tip" id="lTip" hidden></div>
       </div>
-
-      <div class="step s2">
-        <h3><span class="num">2</span>เขียนคำ <small>เขียนด้วยปากกาหรือนิ้วในช่องนี้</small></h3>
-        <div id="wPadSlot"><div id="padBox">
-        <div class="pad" id="pad"><canvas id="guide"></canvas><canvas id="ink"></canvas></div>
-        <div class="padtools" style="margin-top:10px">
-          <button class="swatch" data-c="ink" aria-label="ปากกาสีเข้ม" aria-pressed="true"></button>
-          <button class="swatch" data-c="#2457c5" aria-label="ปากกาสีน้ำเงิน" style="background:#2457c5"></button>
-          <button class="swatch" data-c="#c0392b" aria-label="ปากกาสีแดง" style="background:#c0392b"></button>
-          <span class="sizebox"><label class="counter" for="penSize">ขนาดเส้น</label><input type="range" id="penSize" min="2" max="10" value="4"></span>
-          <span class="spacer"></span>
-          <button class="btn" id="undo">↶ ย้อนเส้น</button>
-          <button class="btn" id="clear">🧹 ลบทั้งหมด</button>
-        </div>
-        </div></div>
+      <div class="letters" id="lLetters"></div>
+      <div class="row grow" style="margin-top:18px"><button class="btn big" id="lSay">🔊 ฟังคำและประโยค</button></div>
+      <div class="row grow" style="margin-top:8px">
+        <button class="btn big" id="lPrev">← คำก่อนหน้า</button>
+        <button class="btn primary big" id="lNext">คำถัดไป →</button>
       </div>
+    </section>
 
-      <div class="step s3">
-        <h3><span class="num">3</span>ตรวจคำตอบ <small>เขียนเสร็จแล้วกดดูเฉลย</small></h3>
-        <div class="row grow">
-          <button class="btn primary big" id="reveal">👀 ดูเฉลย</button>
-          <button class="btn big" id="wSkip">ข้ามคำนี้ →</button>
+    <!-- STEP 2: TEST -->
+    <section id="v-test" class="panel" hidden>
+      <div id="tStart">
+        <h2 class="ph">② สอบเขียน 20 คำ</h2>
+        <p class="pd">ระบบอ่านคำละ 2 ครั้ง พร้อมประโยค 2 ครั้ง ให้<b>เขียน</b>คำที่ได้ยินลงในช่อง คำละ 1 คะแนน สอบเสร็จแล้วดูเฉลยและตรวจทีละข้อ</p>
+        <button class="btn primary big" id="tGo">▶ เริ่มสอบ</button>
+      </div>
+      <div id="tRun" hidden>
+        <div class="row"><span class="counter" id="tCount"></span><span class="spacer"></span><span class="counter" id="tTime"></span></div>
+        <div class="row" style="margin:12px 0"><button class="btn primary" id="tPlay">🔊 ฟังอีกครั้ง</button><button class="btn" id="tPos">🏷️ ชนิดคำ</button><span class="hint" id="tHint" hidden></span></div>
+        <div id="tPadSlot"></div>
+        <div class="row grow" style="margin-top:12px"><button class="btn primary big" id="tSubmit">คำถัดไป →</button></div>
+      </div>
+      <div id="tDone" hidden>
+        <div class="tsum" id="tSum"></div>
+        <div class="tres" id="tRes" style="margin-top:12px"></div>
+        <div class="row grow" style="margin-top:14px"><button class="btn primary big" id="tSave" disabled>บันทึกคะแนน</button></div>
+        <div class="row grow" style="margin-top:8px"><button class="btn primary big" id="tAgain" hidden></button></div>
+      </div>
+    </section>
+
+    <!-- STEP 3: FIX (write the missed words) -->
+    <section id="v-write" class="panel" hidden>
+      <div class="wgrid">
+        <div class="row wtop"><span class="lvl" id="wLvl"></span><span class="counter" id="wCount"></span><span class="spacer"></span><span class="counter" id="wScore"></span></div>
+        <div class="step s1">
+          <h3><span class="num">1</span>ฟังคำ <small>ฟังแล้วเขียนให้ถูก</small></h3>
+          <button class="btn primary big" id="wPlay">🔊 ฟังคำ (อ่านแบบสนามแข่ง)</button>
+          <button class="btn" id="wWord">🔁 ฟังเฉพาะคำอีกครั้ง</button>
+          <p class="helplab">💡 ตัวช่วย (กดเมื่อไม่แน่ใจ)</p>
+          <div class="helpers">
+            <button class="btn soft" id="wHintPos"><span class="i">🏷️</span>ชนิดคำ</button>
+            <button class="btn soft" id="wHintSent"><span class="i">💬</span>ประโยคตัวอย่าง</button>
+            <button class="btn soft" id="wHintMean"><span class="i">🇹🇭</span>ความหมาย</button>
+            <button class="btn soft" id="wHintRead"><span class="i">🗣️</span>คำอ่านไทย</button>
+          </div>
+          <div class="hint" id="wHint" hidden></div>
         </div>
-        <div class="answer" id="wAns" hidden>
-          <div class="word" id="aWord" style="margin-top:0"></div>
-          <div class="letters" id="aLetters"></div>
-          <div class="meta" style="margin-top:10px"><div><span class="read" id="aRead"></span> · <span class="pos" id="aPos"></span> · <span class="mean" id="aMean"></span></div><div class="tip" id="aTip" hidden></div></div>
-          <p style="margin:14px 0 8px;font-weight:600">เทียบกับที่เขียน แล้วเลือก:</p>
+        <div class="step s2">
+          <h3><span class="num">2</span>เขียนคำ <small>เขียนด้วยปากกาหรือนิ้วในช่องนี้</small></h3>
+          <div id="wPadSlot"><div id="padBox">
+          <div class="pad" id="pad"><canvas id="guide"></canvas><canvas id="ink"></canvas></div>
+          <div class="padtools" style="margin-top:10px">
+            <button class="swatch" data-c="ink" aria-label="ปากกาสีเข้ม" aria-pressed="true"></button>
+            <button class="swatch" data-c="#2457c5" aria-label="ปากกาสีน้ำเงิน" style="background:#2457c5"></button>
+            <button class="swatch" data-c="#c0392b" aria-label="ปากกาสีแดง" style="background:#c0392b"></button>
+            <span class="sizebox"><label class="counter" for="penSize">ขนาดเส้น</label><input type="range" id="penSize" min="2" max="10" value="4"></span>
+            <span class="spacer"></span>
+            <button class="btn" id="undo">↶ ย้อนเส้น</button>
+            <button class="btn" id="clear">🧹 ลบทั้งหมด</button>
+          </div>
+          </div></div>
+        </div>
+        <div class="step s3">
+          <h3><span class="num">3</span>ตรวจคำตอบ <small>เขียนเสร็จแล้วกดดูเฉลย</small></h3>
           <div class="row grow">
-            <button class="btn ok big" id="markOk">✓ เขียนถูก</button>
-            <button class="btn bad big" id="markBad" style="flex-direction:column;gap:0">✗ เขียนผิด<small style="font-weight:500;font-size:12.5px">เก็บไว้ทบทวน</small></button>
+            <button class="btn primary big" id="reveal">👀 ดูเฉลย</button>
+            <button class="btn big" id="wSkip">ข้ามไปก่อน →</button>
+          </div>
+          <div class="answer" id="wAns" hidden>
+            <div class="word" id="aWord" style="margin-top:0"></div>
+            <div class="letters" id="aLetters"></div>
+            <div class="meta" style="margin-top:10px"><div><span class="read" id="aRead"></span> · <span class="pos" id="aPos"></span> · <span class="mean" id="aMean"></span></div><div class="tip" id="aTip" hidden></div></div>
+            <p style="margin:14px 0 8px;font-weight:600">เทียบกับที่เขียน แล้วเลือก:</p>
+            <div class="row grow">
+              <button class="btn ok big" id="markOk">✓ เขียนถูก</button>
+              <button class="btn bad big" id="markBad">✗ ยังผิด (ฝึกอีก)</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- LEARN -->
-  <section id="v-learn" class="panel" hidden>
-    <div class="row"><span class="lvl" id="lLvl"></span><span class="counter" id="lCount"></span><span class="spacer"></span>
-      <button class="btn" id="lShuffle">🔀 สุ่มลำดับคำ</button></div>
-    <div class="word" id="lWord"></div>
-    <div class="meta">
-      <div><span class="read" id="lRead"></span> · <span class="pos" id="lPos"></span></div>
-      <div class="mean" id="lMean"></div>
-      <p class="sent" id="lSent"></p>
-      <div class="tip" id="lTip" hidden></div>
-    </div>
-    <div class="letters" id="lLetters"></div>
-    <div class="row grow" style="margin-top:18px">
-      <button class="btn primary big" id="lSay">🔊 ฟังคำและประโยค</button>
-    </div>
-    <div class="row grow" style="margin-top:8px">
-      <button class="btn" id="lPrev">← คำก่อนหน้า</button>
-      <button class="btn" id="lNext">คำถัดไป →</button>
-    </div>
-  </section>
+    <!-- ROUND DONE -->
+    <section id="v-done" class="panel" hidden>
+      <div id="doneBody"></div>
+      <div class="row grow" style="margin-top:16px"><button class="btn primary big" id="nextRound"></button></div>
+    </section>
+  </div>
 
-  <!-- TEST -->
-  <section id="v-test" class="panel" hidden>
-    <div id="tStart">
-      <h2 style="font-family:var(--f-display);margin:0 0 6px">สอบเหมือนสนามจริง</h2>
-      <p style="margin:0 0 14px;color:var(--muted)">ระบบอ่านคำละ 2 ครั้ง พร้อมประโยค 2 ครั้ง ให้<b>เขียน</b>คำที่ได้ยินลงในช่อง 20 คำ คำละ 1 คะแนน (เต็ม 20) เป็นคำ 20 คำของรอบนี้ จบแล้วดูเฉลยและตรวจทีละข้อ</p>
-      <button class="btn primary big" id="tGo">▶ เริ่มสอบ</button>
-    </div>
-    <div id="tRun" hidden>
-      <div class="row"><span class="counter" id="tCount"></span><span class="spacer"></span><span class="counter" id="tTime"></span></div>
-      <div class="row" style="margin:12px 0"><button class="btn primary" id="tPlay">🔊 ฟังอีกครั้ง</button><button class="btn" id="tPos">🏷️ ชนิดคำ</button><span class="hint" id="tHint" hidden></span></div>
-      <div id="tPadSlot"></div>
-      <div class="row grow" style="margin-top:12px"><button class="btn primary big" id="tSubmit">คำถัดไป →</button></div>
-    </div>
-    <div id="tDone" hidden>
-      <div class="tsum" id="tSum"></div>
-      <div class="tres" id="tRes" style="margin-top:12px"></div>
-      <div class="row grow" style="margin-top:14px"><button class="btn primary big" id="tSave" disabled>บันทึกคะแนน</button></div>
-      <div class="row grow" style="margin-top:8px"><button class="btn big" id="tAgain" hidden>🔄 สอบอีกชุด</button></div>
-    </div>
-  </section>
-
-  <!-- LIST -->
+  <!-- WORD LIST -->
   <section id="v-list" hidden>
-    <div class="row" id="lf" style="margin-bottom:10px"><button class="chip" data-f="all" aria-pressed="true">ทั้งหมด</button><button class="chip" data-f="done" aria-pressed="false">✓ ฝึกแล้ว</button><button class="chip" data-f="todo" aria-pressed="false">ยังไม่ได้ฝึก</button><button class="chip" data-f="wrong" aria-pressed="false">✗ ต้องทบทวน</button></div>
+    <div class="row" id="lf" style="margin-bottom:10px"></div>
     <div class="row" style="margin-bottom:10px"><input type="search" id="q" placeholder="🔎 ค้นหาคำศัพท์หรือคำแปล" style="flex:1;min-width:0"><span class="counter" id="qCount"></span></div>
-    <div class="tbl"><table><thead><tr><th title="สถานะ">✓</th><th>คำศัพท์ (กด 🔊 เพื่อฟัง)</th><th>คำอ่าน</th><th>ชนิด</th><th>คำแปล</th><th>ระดับ</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="tbl"><table><thead><tr><th title="สถานะ">สถานะ</th><th>คำศัพท์ (กด 🔊 เพื่อฟัง)</th><th>คำอ่าน</th><th>ชนิด</th><th>คำแปล</th><th>ชุด</th></tr></thead><tbody id="tbody"></tbody></table></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="more" hidden>แสดงเพิ่ม</button></div>
   </section>
+  <div class="row foot"><span class="status" id="audStat"></span><span class="spacer"></span><span class="status" id="syncStat"></span></div>
 </div>
 
 <dialog id="setDlg">
   <h2>⚙️ ตั้งค่าเสียง</h2>
   <div class="field"><label for="voiceSel">เสียงอ่าน</label><select id="voiceSel"></select></div>
   <div class="field"><label for="rate">ความเร็ว <span class="counter" id="rateVal">100%</span></label><input type="range" id="rate" min="0.5" max="1.1" step="0.05" value="0.75"></div>
+  <p class="counter" style="margin:-6px 0 14px">แนะนำ 100% เสียงจะชัดที่สุด</p>
   <div class="row grow"><button class="btn" id="voiceTest">🔊 ทดสอบเสียง</button><button class="btn primary" data-close>เสร็จ</button></div>
 </dialog>
 
 <dialog id="helpDlg">
-  <h2>วิธีใช้ 3 ขั้น</h2>
+  <h2>วิธีใช้</h2>
   <ol class="guide">
-    <li><span class="num">1</span><div><b>เลือกระดับคำ</b> แอปแบ่งเป็น<b>รอบละ 20 คำ</b> ทำตามแถบรอบ: ① ท่องจำ → ② สอบ → ③ ฝึกเขียนเฉพาะคำที่ผิด ครบแล้วเริ่มรอบใหม่ คำที่เคยผิดจะวนกลับมาทวน</div></li>
-    <li><span class="num">2</span><div><b>เขียนคำ</b> ลงในช่องด้วย Apple Pencil หรือนิ้ว ถ้าไม่แน่ใจกด <b>💡 ตัวช่วย</b></div></li>
-    <li><span class="num">3</span><div>กด <b>👀 ดูเฉลย</b> แล้วเลือกว่าเขียนถูกหรือผิด คำที่ผิดจะเก็บไว้ใน <b>🔁 คำที่ต้องทบทวน</b></div></li>
+    <li><span class="num">1</span><div><b>เลือกชุดคำ</b> ด้านบน เช่น 🏆 คำแข่ง แอปจะแบ่งให้ฝึก<b>รอบละ 20 คำ</b></div></li>
+    <li><span class="num">2</span><div>ทำตามขั้นในหน้า <b>🏠 ฝึกรอบนี้</b>: ① ท่องจำ → ② สอบเขียน แล้วตรวจกับเฉลย → ③ ฝึกเขียนคำที่ผิดจนถูก จบแล้วกดเริ่มรอบใหม่</div></li>
+    <li><span class="num">3</span><div>คำที่เคยผิดจะกลับมาสอบอีกในรอบหลังๆ เขียนถูก 2 ครั้งถึงนับว่า <b>จำได้แล้ว ✓</b> ดูสถานะทุกคำได้ที่ <b>📋 คำศัพท์</b></div></li>
   </ol>
-  <p class="counter" style="margin:0 0 14px">เมนูด้านล่าง: ✍️ ฝึกเขียน · 📖 ท่องจำ · ⏱️ สอบ 20 คำ · 📋 รายการคำ — ปรับเสียงหรือความเร็วได้ที่ปุ่ม ⚙️ เสียง</p>
+  <p class="counter" style="margin:0 0 14px">เขียนด้วย Apple Pencil หรือนิ้วก็ได้ · ปรับเสียงหรือความเร็วที่ปุ่ม ⚙️ เสียง</p>
   <div class="row grow"><button class="btn primary big" data-close>เริ่มฝึกเลย</button></div>
   <p id="teacherLink" hidden style="margin:12px 0 0;text-align:center"><a href="teacher.html" class="counter">👩‍🏫 สำหรับครู: ดูผลการฝึกของนักเรียน</a></p>
 </dialog>
@@ -333,28 +349,28 @@ const W=RAW.map(([w,pos,read,mean,s,lv],i)=>{
   if(/^Remember/.test(s)){const i=s.indexOf('. ');if(i>0&&i<s.length-2){tip=s.slice(0,i+1);sent=s.slice(i+2)}else{tip=s;sent=''}}
   return{i,w,pos,read,mean,sent,tip,lv};
 });
-const LV={K:'🏆 คำแข่ง',B1:'พื้นฐาน B1',B2:'กลาง B2',C1:'ท้าทาย C1',X:'คำสะกดยาก'};
+const LV={K:'🏆 คำแข่ง',B1:'พื้นฐาน B1',B2:'กลาง B2',C1:'ท้าทาย C1',X:'คำสะกดยาก',ALL:'ทั้งหมด'};
+const LEVELS=['K','B1','B2','C1','X','ALL'];
 const store=window.SBStore||{get(k,d){try{const v=localStorage.getItem('sb_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('sb_'+k,JSON.stringify(v))}catch(e){}}};
-let wrong=new Set(store.get('wrong',[]));
-let level=store.get('level','B2');
-const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
-let day=store.get('day',{d:'',n:0});if(day.d!==today())day={d:today(),n:0};let done=day.n;
-function bump(k=1){done+=k;day={d:today(),n:done};store.set('day',day);$('stDone').textContent=done}
-let seen=new Set(store.get('seen',[]));
-function tally(ok){const s=store.get('tot',{ok:0,bad:0});s[ok?'ok':'bad']++;store.set('tot',s)}
-function markSeen(w){if(!seen.has(w)){seen.add(w);store.set('seen',[...seen]);try{renderFilters()}catch(e){}}}
-function buildDeck(p){const a=shuffle(p.filter(x=>!seen.has(x.w))),b=shuffle(p.filter(x=>seen.has(x.w)));return a.concat(b)}
-let lpos=store.get('lpos',{});
 const $=id=>document.getElementById(id);
-const esc=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
-function pool(){
-  if(level==='ALL')return W;
-  if(level==='WRONG')return W.filter(x=>wrong.has(x.w));
-  if(level==='DONE')return W.filter(x=>seen.has(x.w));
-  return W.filter(x=>x.lv===level);
-}
-function saveWrong(){store.set('wrong',[...wrong]);$('stWrong').textContent=wrong.size;renderFilters()}
+
+/* Word memory.
+   new      – never tested
+   wrong    – missed; needs practice
+   learning – written correctly once after a miss; comes back for a re-check a couple of rounds later
+   known    – correct (first time, or twice after a miss) */
+let wrong=new Set(store.get('wrong',[]));
+let seen=new Set(store.get('seen',[]));
+let learning=store.get('learning',{});   // word -> round count at which it is due again
+let rc=store.get('rc',0);                // rounds finished across all sets
+let level=store.get('level','K');if(!LEVELS.includes(level))level='K';
+const stateOf=w=>wrong.has(w)?'wrong':learning[w]!=null?'learning':seen.has(w)?'known':'new';
+function pool(){return level==='ALL'?W:W.filter(x=>x.lv===level)}
+function saveMem(){store.set('wrong',[...wrong]);store.set('seen',[...seen]);store.set('learning',learning);store.set('rc',rc);renderHead()}
+function tally(ok){const s=store.get('tot',{ok:0,bad:0});s[ok?'ok':'bad']++;store.set('tot',s)}
+function renderHead(){const p=pool();$('stKnown').textContent=p.filter(x=>stateOf(x.w)==='known').length;$('stTotal').textContent=p.length;$('stWrong').textContent=p.filter(x=>wrong.has(x.w)).length}
 
 /* ---------- speech ----------
    Preferred: recorded clips shipped with the app (same clear voice on every device).
@@ -371,7 +387,7 @@ function loadVoices(){
   const saved=store.get('voice3','__app');
   voice=(saved&&saved!=='__app')?(voices.find(v=>v.name===saved)||null):(voices[0]&&rank(voices[0])<20?voices[0]:null);
   const sel=useApp?'__app':(voice?voice.name:'');
-  $('voiceSel').innerHTML=(AUD.f.length?`<option value="__app">🎧 เสียงคุณภาพสูงในแอป (แนะนำ)</option>`:'')+(synth?`<option value="">เสียงมาตรฐานของเครื่อง</option>`+voices.map(v=>`<option value="${esc(v.name)}">${esc(v.name.replace(/^Microsoft /,''))} (${esc(v.lang)})</option>`).join(''):'');
+  $('voiceSel').innerHTML=(AUD.f.length?`<option value="__app">🎧 Jenny (แนะนำ)</option>`:'')+(synth?`<option value="">เสียงมาตรฐานของเครื่อง</option>`+voices.map(v=>`<option value="${esc(v.name)}">${esc(v.name.replace(/^Microsoft /,''))} (${esc(v.lang)})</option>`).join(''):'');
   $('voiceSel').value=sel;
 }
 loadVoices();if(synth){synth.onvoiceschanged=loadVoices;setTimeout(loadVoices,600)}
@@ -459,18 +475,6 @@ function maskSent(x){const re=new RegExp(x.w.replace(/[-]/g,'\\-').slice(0,Math.
 function hiSent(x){if(!x.sent)return'';const re=new RegExp('('+x.w.slice(0,Math.max(4,x.w.length-2)).replace(/[-]/g,'\\-')+'\\w*)','gi');return esc(x.sent).replace(re,'<mark>$1</mark>')}
 const letters=w=>[...w].map(c=>`<span>${esc(c)}</span>`).join('');
 
-/* ---------- filters ---------- */
-function renderFilters(){
-  const opts=[['K',W.filter(x=>x.lv==='K').length],['B1',W.filter(x=>x.lv==='B1').length],['B2',W.filter(x=>x.lv==='B2').length],['C1',W.filter(x=>x.lv==='C1').length],['X',W.filter(x=>x.lv==='X').length],['ALL',W.length],['WRONG',wrong.size],['DONE',W.filter(x=>seen.has(x.w)).length]];
-  $('filters').innerHTML=opts.map(([k,n])=>`<button class="chip" data-k="${k}" aria-pressed="${k===level}">${k==='ALL'?'ทั้งหมด':k==='WRONG'?'🔁 คำที่ต้องทบทวน':k==='DONE'?'✓ ฝึกแล้ว':LV[k]} <small>${n}</small></button>`).join('');
-}
-$('filters').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;level=b.dataset.k;store.set('level',level);renderFilters();resetAll();preload()});
-
-/* ---------- tabs ---------- */
-const views=['write','learn','test','list'];
-function show(v){views.forEach(n=>{$('v-'+n).hidden=n!==v;$('tab-'+n).setAttribute('aria-selected',n===v)});stopSpeak();if(v==='write')placePad('write');if(v==='test'&&!$('tRun').hidden)placePad('test');if(v==='list')renderList()}
-views.forEach(n=>$('tab-'+n).addEventListener('click',()=>show(n)));
-
 /* ---------- pad ---------- */
 const pad=$('pad'),gc=$('guide'),ic=$('ink'),g=gc.getContext('2d'),c=ic.getContext('2d');
 let strokes=[],cur=null,color='ink',size=4;
@@ -531,79 +535,81 @@ document.querySelectorAll('.swatch').forEach(b=>{if(b.dataset.c==='ink')b.style.
 window.addEventListener('resize',()=>{if(!$('v-write').hidden)sizePad()});
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>sizePad());
 
-/* ---------- write mode ---------- */
-let wDeck=[],wi=0,wOk=0,wBad=0;
-function wCur(){return wDeck[wi]}
-function wLoad(){
-  const x=wCur();strokes=[];redraw();$('wAns').hidden=true;$('wHint').hidden=true;
-  if(!x){$('wCount').textContent='';$('wLvl').textContent='';$('wHint').hidden=false;$('wHint').textContent=fixMode()?'🎉 ฝึกคำที่ผิดครบแล้ว กด ▶ เริ่มรอบถัดไป ที่แถบด้านบน':level==='DONE'?'ยังไม่มีคำที่ฝึกแล้ว เลือกระดับอื่นเพื่อเริ่มฝึก':level==='WRONG'?'ยังไม่มีคำที่ต้องทบทวน เลือกระดับอื่นเพื่อฝึกต่อ':'ไม่มีคำในชุดนี้';setW(true);return}
-  setW(false);$('wLvl').textContent=LV[x.lv];const pp=pool(),ns=pp.filter(y=>seen.has(y.w)).length;const rr=getRound();$('wCount').textContent=rr?(rr.st.test?`รอบที่ ${rr.n} · ฝึกคำที่ผิด เหลือ ${wDeck.length} คำ`:`รอบที่ ${rr.n} · ฝึกเขียนก่อนสอบ (ไม่บังคับ)`):level==='WRONG'?`เหลือ ${wDeck.length} คำ`:level==='DONE'?`ทบทวนคำที่ ${wi+1} / ${wDeck.length}`:`เขียนแล้ว ${ns} / ${pp.length} คำ`;$('wReset').hidden=true;
-  $('wScore').textContent=`ถูก ${wOk} · ผิด ${wBad}`;
+/* ---------- sets ---------- */
+function renderFilters(){
+  $('filters').innerHTML=LEVELS.map(k=>`<button class="chip" data-k="${k}" aria-pressed="${k===level}">${LV[k]} <small>${k==='ALL'?W.length:W.filter(x=>x.lv===k).length}</small></button>`).join('');
 }
-function setW(dis){['wPlay','wWord','wHintPos','wHintSent','wHintMean','wHintRead','reveal','wSkip'].forEach(id=>$(id).disabled=dis)}
-function hint(html){$('wHint').innerHTML=html;$('wHint').hidden=false}
-$('wPlay').onclick=()=>{const x=wCur();if(x)speak([cW(x),cW(x),cS(x),cS(x),cW(x)])};
-$('wWord').onclick=()=>{const x=wCur();if(x)speak([cW(x)])};
-$('wHintPos').onclick=()=>{const x=wCur();hint(`<b>Part of speech:</b> ${esc(posName(x.pos))} (${esc(x.pos)})`);speak([cP(x)])};
-$('wHintSent').onclick=()=>{const x=wCur();hint(`<span class="sent">${maskSent(x)}</span>`);speak([cS(x)])};
-$('wHintMean').onclick=()=>{const x=wCur();hint(`<b>ความหมาย:</b> ${esc(x.mean)}`)};
-$('wHintRead').onclick=()=>{const x=wCur();hint(`<b>คำอ่าน:</b> <span class="read">${esc(x.read)}</span>`)};
-$('reveal').onclick=()=>{const x=wCur();if(!x)return;$('aWord').textContent=x.w;$('aLetters').innerHTML=letters(x.w);$('aRead').textContent=x.read;$('aPos').textContent=x.pos;$('aMean').textContent=x.mean;$('aTip').hidden=!x.tip;$('aTip').textContent=x.tip;$('wAns').hidden=false;$('wAns').scrollIntoView({block:'nearest',behavior:'smooth'})};
-const fixMode=()=>{const r=getRound();return !!(r&&r.st.test)};
-function writeDeck(){const r=getRound();if(!r)return level==='WRONG'||level==='DONE'?shuffle(pool()):buildDeck(pool());
-  if(r.st.test){const m=new Map(pool().map(x=>[x.w,x]));return shuffle((r.fix||[]).filter(w=>!r.wd.includes(w)).map(w=>m.get(w)).filter(Boolean))}
-  return shuffle(roundPool())}
-function wNext(){wi++;if(wi>=wDeck.length){wDeck=writeDeck();wi=0}wLoad()}
-function roundFixed(w){const r=getRound();if(!r||!r.st.test)return;if(!r.wd.includes(w))r.wd.push(w);if((r.fix||[]).every(x=>r.wd.includes(x)))r.st.write=1;saveRound()}
-$('wReset').onclick=()=>{pool().forEach(x=>seen.delete(x.w));store.set('seen',[...seen]);wDeck=buildDeck(pool());wi=0;wLoad()};
-$('markOk').onclick=()=>{const x=wCur();wOk++;tally(1);bump();markSeen(x.w);const fm=fixMode();roundFixed(x.w);if(level==='WRONG'||wrong.has(x.w)){wrong.delete(x.w);saveWrong()}if(level==='WRONG'||fm){wDeck.splice(wi,1);wi--}wNext()};
-$('markBad').onclick=()=>{const x=wCur();wBad++;tally(0);bump();markSeen(x.w);wrong.add(x.w);saveWrong();wNext()};
-$('wSkip').onclick=wNext;
+$('filters').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||b.dataset.k===level)return;level=b.dataset.k;store.set('level',level);renderFilters();resetAll();preload()});
 
-/* ---------- rounds: 20 words at a time (learn -> write -> test) ---------- */
+/* ---------- tabs ---------- */
+function show(v){['home','list'].forEach(n=>{$('v-'+n).hidden=n!==v;$('tab-'+n).setAttribute('aria-selected',n===v)});stopSpeak();if(v==='list')renderList();else openStep(curStep||getRound().step)}
+['home','list'].forEach(n=>$('tab-'+n).addEventListener('click',()=>show(n)));
+
+/* ---------- rounds: 20 words, ① learn → ② test → ③ write the missed words ---------- */
 const ROUND=20;
 let rounds=store.get('rounds',{});
-const roundLv=()=>level!=='WRONG'&&level!=='DONE';
-function newRound(prev){const pp=pool();const wr=shuffle(pp.filter(x=>wrong.has(x.w))).slice(0,5);const pick=new Set(wr.map(x=>x.w));
-  const un=shuffle(pp.filter(x=>!seen.has(x.w)&&!pick.has(x.w)));const rest=shuffle(pp.filter(x=>seen.has(x.w)&&!pick.has(x.w)&&!wrong.has(x.w)));
-  const r={n:(prev?prev.n:0)+1,words:[...wr,...un,...rest].slice(0,ROUND).map(x=>x.w),st:{},wd:[],hist:prev?prev.hist:[]};rounds[level]=r;store.set('rounds',rounds);return r}
-function getRound(){if(!roundLv())return null;let r=rounds[level];const ws=new Set(pool().map(x=>x.w));if(!r||!r.words||!r.words.length||!r.words.every(w=>ws.has(w)))r=newRound(r&&r.words?r:null);if(!r.wd)r.wd=[];if(!r.st)r.st={};return r}
-function roundPool(){const r=getRound();if(!r)return pool();const m=new Map(pool().map(x=>[x.w,x]));return r.words.map(w=>m.get(w)).filter(Boolean)}
-function saveRound(){store.set('rounds',rounds);renderRound()}
-function markStep(s){const r=getRound();if(!r||r.st[s])return;r.st[s]=1;saveRound()}
-function renderRound(){const r=getRound(),bar=$('roundBar');if(!r){bar.hidden=true;return}bar.hidden=false;
-  const fx=r.fix||[],steps=[['learn','① ท่องจำ'],['test','② สอบ'],['write',r.st.test?`③ ฝึกคำที่ผิด ${fx.filter(w=>r.wd.includes(w)).length}/${fx.length}`:'③ ฝึกคำที่ผิด']];const nx=steps.find(([k])=>!r.st[k]);
-  const pp=pool(),nd=pp.filter(x=>seen.has(x.w)).length;
-  bar.innerHTML=`<span class="rn">รอบที่ ${r.n}</span>`+steps.map(([k,l],i)=>`${i?'<span class="arr">→</span>':''}<button class="rs${r.st[k]?' done':nx&&nx[0]===k?' next':''}" data-go="${k}">${l}${r.st[k]?' ✓':''}</button>`).join('')+(r.st.test&&r.st.write?`<button class="rs next" data-next="1">▶ เริ่มรอบที่ ${r.n+1}</button>`:'')+
-    `<span class="hist">${r.hist.length?'ผลแต่ละรอบ: '+r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.m?h.s+'/'+h.m:h.s+'%'}</b>`).join(' · ')+' · ':''}ทั้งชุดฝึกแล้ว ${nd} / ${pp.length} คำ</span>`}
-$('roundBar').addEventListener('click',e=>{if(e.target.closest('[data-next]')){startNextRound();return}const b=e.target.closest('[data-go]');if(b)show(b.dataset.go)});
-function startNextRound(){const r=getRound();if(!r)return;newRound(r);resetAll();show('learn')}
+function newRound(prev){const pp=pool();let words;
+  if(pp.length<=ROUND)words=shuffle(pp).map(x=>x.w);
+  else{const pick=new Set(),take=(arr,n)=>{const out=[];for(const x of arr){if(out.length>=n)break;if(!pick.has(x.w)){pick.add(x.w);out.push(x)}}return out};
+    const due=take(shuffle(pp.filter(x=>learning[x.w]!=null&&learning[x.w]<=rc)),5);
+    const wr=take(shuffle(pp.filter(x=>wrong.has(x.w))),5);
+    const rest=ROUND-due.length-wr.length;
+    const nw=take(shuffle(pp.filter(x=>!seen.has(x.w))),rest);
+    const more=take(shuffle(pp.filter(x=>learning[x.w]!=null)).concat(shuffle(pp.filter(x=>stateOf(x.w)==='known'))),rest-nw.length);
+    words=shuffle([...due,...wr,...nw,...more]).map(x=>x.w)}
+  const r={n:(prev?prev.n:0)+1,words,step:'learn',li:0,fix:[],fixed:[],hist:prev&&prev.hist?prev.hist:[]};
+  rounds[level]=r;store.set('rounds',rounds);return r}
+function getRound(){let r=rounds[level];const ws=new Set(pool().map(x=>x.w));
+  if(!r||!Array.isArray(r.words)||!r.words.length||!r.words.every(w=>ws.has(w)))r=newRound(r&&r.hist?r:null);
+  if(!r.step){const st=r.st||{};r.fix=r.fix||[];r.fixed=r.wd||[];r.step=st.test?(r.fix.length&&!st.write?'fix':'done'):'learn';r.li=0;delete r.st;delete r.wd;store.set('rounds',rounds)}
+  return r}
+function saveRound(){store.set('rounds',rounds)}
+const byW=w=>W.find(x=>x.w===w&&(level==='ALL'||x.lv===level))||W.find(x=>x.w===w);
+function roundWords(){return getRound().words.map(byW).filter(Boolean)}
 
-/* ---------- learn mode ---------- */
-let lDeck=[],li=0,lBase=null;
-function lLoad(){const x=lDeck[li];if(!x){$('lWord').textContent='—';['lRead','lPos','lMean','lSent','lCount','lLvl'].forEach(i=>$(i).textContent='');$('lLetters').innerHTML='';$('lTip').hidden=true;return}
-  $('lLvl').textContent=LV[x.lv];$('lCount').textContent=`${li+1} / ${lDeck.length}`;if(lDeck===lBase){lpos[level]=li;store.set('lpos',lpos)}if(li===lDeck.length-1)markStep('learn');$('lWord').textContent=x.w;$('lRead').textContent=x.read;$('lPos').textContent=x.pos;$('lMean').textContent=x.mean;$('lSent').innerHTML=hiSent(x);$('lTip').hidden=!x.tip;$('lTip').textContent=x.tip;$('lLetters').innerHTML=letters(x.w)}
-$('lPrev').onclick=()=>{if(!lDeck.length)return;li=(li-1+lDeck.length)%lDeck.length;lLoad()};
-$('lNext').onclick=()=>{if(!lDeck.length)return;li=(li+1)%lDeck.length;lLoad()};
-$('lSay').onclick=()=>{const x=lDeck[li];if(x)speak(x.sent?[cW(x),cS(x)]:[cW(x)])};
-$('lShuffle').onclick=()=>{lDeck=shuffle(lBase);li=0;lLoad()};
+let curStep=null;
+function renderStepper(){const r=getRound(),s=r.step,done={learn:s!=='learn',test:s==='fix'||s==='done',fix:s==='done'};
+  const can={learn:true,test:s==='learn'||s==='test',fix:s==='fix'||s==='done'};
+  const lab={learn:'① ท่องจำ',test:'② สอบ',fix:r.fix.length&&s!=='learn'&&s!=='test'?`③ ฝึกคำที่ผิด ${r.fixed.length}/${r.fix.length}`:'③ ฝึกคำที่ผิด'};
+  $('stepper').innerHTML=`<span class="rn">รอบที่ ${r.n}</span>`+['learn','test','fix'].map((k,i)=>`${i?'<span class="arr">›</span>':''}<button class="rs${done[k]?' done':''}${curStep===k?' cur':''}" data-step="${k}" ${can[k]?'':'disabled'}>${lab[k]}${done[k]?' ✓':''}</button>`).join('')+
+    (r.hist.length?`<span class="hist">ผลแต่ละรอบ: ${r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.s}/${h.m||20}</b>`).join(' · ')}</span>`:'')}
+$('stepper').addEventListener('click',e=>{const b=e.target.closest('[data-step]');if(b&&!b.disabled)openStep(b.dataset.step)});
+function openStep(s){const r=getRound();if(s==='test'&&!(r.step==='learn'||r.step==='test'))s=r.step==='done'?'done':'fix';if(s==='fix'&&r.step==='done')s='done';
+  curStep=s;stopSpeak();
+  $('v-learn').hidden=s!=='learn';$('v-test').hidden=s!=='test';$('v-write').hidden=s!=='fix';$('v-done').hidden=s!=='done';
+  if(s==='learn'){lDeck=roundWords();li=Math.min(r.li||0,lDeck.length-1);lLoad()}
+  if(s==='test'){if($('tRun').hidden&&$('tDone').hidden)$('tStart').hidden=false;if(!$('tRun').hidden)placePad('test')}
+  if(s==='fix'){placePad('write');wDeck=fixDeck();wi=0;wLoad();requestAnimationFrame(sizePad)}
+  if(s==='done')renderDone();
+  renderStepper()}
 
-/* ---------- test mode ---------- */
+/* ---------- ① learn ---------- */
+let lDeck=[],li=0;
+function lLoad(){const x=lDeck[li];if(!x)return;const r=getRound();r.li=li;saveRound();
+  $('lLvl').textContent=LV[x.lv];$('lCount').textContent=`คำที่ ${li+1} / ${lDeck.length}`;$('lWord').textContent=x.w;$('lRead').textContent=x.read;$('lPos').textContent=x.pos;$('lMean').textContent=x.mean;$('lSent').innerHTML=hiSent(x);$('lTip').hidden=!x.tip;$('lTip').textContent=x.tip;$('lLetters').innerHTML=letters(x.w);
+  const last=li===lDeck.length-1;$('lNext').textContent=last?'ท่องครบแล้ว ไปสอบ →':'คำถัดไป →';$('lPrev').disabled=li===0}
+$('lSay').onclick=()=>{const x=lDeck[li];if(x)speak([cW(x),cS(x)])};
+$('lPrev').onclick=()=>{if(li>0){li--;lLoad()}};
+$('lNext').onclick=()=>{if(li<lDeck.length-1){li++;lLoad();return}const r=getRound();if(r.step==='learn'){r.step='test';saveRound()}openStep('test')};
+
+/* ---------- ② test ---------- */
 let tDeck=[],ti=0,tAns=[],tMark=[],tStartT=0,tTimer=null,tSaved=false;
 function placePad(where){const box=$('padBox'),slot=$(where==='test'?'tPadSlot':'wPadSlot');if(box.parentNode!==slot){slot.appendChild(box);requestAnimationFrame(sizePad)}}
 function tPlay(){const x=tDeck[ti];speak([cW(x),cW(x),cS(x),cS(x)])}
 function snap(){if(!strokes.length)return null;const w=600,h=Math.round(ic.height*w/ic.width)||200;const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(ic,0,0,w,h);return cv.toDataURL('image/png')}
-$('tGo').onclick=()=>{const p=roundPool();if(!p.length){$('tStart').querySelector('p').textContent='ไม่มีคำในชุดนี้ เลือกระดับอื่นก่อน';return}
-  tDeck=shuffle(p).slice(0,20);ti=0;tAns=[];tMark=[];tSaved=false;$('tStart').hidden=true;$('tDone').hidden=true;$('tRun').hidden=false;placePad('test');
-  tStartT=Date.now();clearInterval(tTimer);tTimer=setInterval(()=>{const s=(Date.now()-tStartT)/1000|0;$('tTime').textContent=`⏱ ${s/60|0}:${String(s%60).padStart(2,'0')}`},1000);tShow()};
+function resetTest(){clearInterval(tTimer);$('tRun').hidden=true;$('tDone').hidden=true;$('tStart').hidden=false;placePad('write')}
+$('tGo').onclick=()=>{const r=getRound();if(r.step==='learn'){r.step='test';saveRound()}
+  tDeck=shuffle(roundWords());ti=0;tAns=[];tMark=[];tSaved=false;$('tStart').hidden=true;$('tDone').hidden=true;$('tRun').hidden=false;placePad('test');
+  tStartT=Date.now();clearInterval(tTimer);$('tTime').textContent='⏱ 0:00';tTimer=setInterval(()=>{const s=(Date.now()-tStartT)/1000|0;$('tTime').textContent=`⏱ ${s/60|0}:${String(s%60).padStart(2,'0')}`},1000);tShow();renderStepper()};
 function tShow(){$('tCount').textContent=`ข้อ ${ti+1} / ${tDeck.length}`;$('tHint').hidden=true;strokes=[];redraw();$('tSubmit').textContent=ti===tDeck.length-1?'ส่งคำตอบ ✓':'คำถัดไป →';tPlay()}
 $('tPlay').onclick=tPlay;
 $('tPos').onclick=()=>{const x=tDeck[ti];$('tHint').textContent=posName(x.pos);$('tHint').hidden=false};
 $('tSubmit').onclick=()=>{tAns.push(snap());tMark.push(tAns[ti]?null:0);ti++;if(ti<tDeck.length)tShow();else tFinish()};
-function tSummary(){const marked=tMark.filter(m=>m!==null).length,ok=tMark.filter(m=>m===1).length,s=(Date.now()-tStartT)/1000|0;
-  $('tSum').innerHTML=tSaved?`<div class="score">${ok} / ${tDeck.length}</div><div>ถูก <b>${ok}</b> จาก ${tDeck.length} คำ · ใช้เวลา ${esc($('tTime').textContent.replace('⏱ ',''))} นาที</div><div class="counter" style="flex-basis:100%">คำที่ผิดถูกเพิ่มเข้า 🔁 คำที่ต้องทบทวน แล้ว</div>`
+function tSummary(){const marked=tMark.filter(m=>m!==null).length,ok=tMark.filter(m=>m===1).length;
+  $('tSum').innerHTML=tSaved?`<div class="score">${ok} / ${tDeck.length}</div><div>ถูก <b>${ok}</b> จาก ${tDeck.length} คำ · ใช้เวลา ${esc($('tTime').textContent.replace('⏱ ',''))} นาที</div>`
     :`<div><b>ตรวจคำตอบ</b> เทียบลายมือกับเฉลย แล้วกด ✓ หรือ ✗ ทุกข้อ</div><div class="counter">ตรวจแล้ว ${marked} / ${tDeck.length} ข้อ · ถูก ${ok}</div>`;
-  $('tSave').disabled=marked<tDeck.length;$('tSave').hidden=tSaved;$('tAgain').hidden=!tSaved;const gr=getRound();$('tAgain').textContent=!gr?'🔄 สอบอีกชุด':(gr.st.test&&(gr.fix||[]).length&&!gr.st.write)?`③ ไปฝึกเขียนคำที่ผิด (${gr.fix.length} คำ) →`:`▶ เริ่มรอบที่ ${gr.n+1} (คำใหม่ 20 คำ)`}
+  $('tSave').disabled=marked<tDeck.length;$('tSave').hidden=tSaved;$('tAgain').hidden=!tSaved;
+  if(tSaved){const r=getRound();$('tAgain').textContent=r.step==='fix'?`③ ไปฝึกเขียนคำที่ผิด (${r.fix.length} คำ) →`:`🎉 ถูกหมด! ไปหน้าสรุปรอบ →`}}
 function tFinish(){clearInterval(tTimer);stopSpeak();placePad('write');$('tRun').hidden=true;$('tDone').hidden=false;
   $('tRes').innerHTML=tDeck.map((x,i)=>`<div class="ti${tMark[i]===1?' y':tMark[i]===0?' n':''}" data-i="${i}"><span class="no">${i+1}</span><div>
     ${tAns[i]?`<img class="hw" src="${tAns[i]}" alt="ลายมือข้อ ${i+1}">`:'<div class="hwe">(ไม่ได้เขียน)</div>'}
@@ -613,29 +619,65 @@ function tFinish(){clearInterval(tTimer);stopSpeak();placePad('write');$('tRun')
 $('tRes').addEventListener('click',e=>{const s=e.target.closest('[data-w]');if(s){speak([cW(W[+s.dataset.w])]);return}
   const b=e.target.closest('[data-m]');if(!b||tSaved)return;const it=b.closest('.ti'),i=+it.dataset.i,m=+b.dataset.m;tMark[i]=m;
   it.classList.toggle('y',m===1);it.classList.toggle('n',m===0);it.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.m===m));tSummary()});
-$('tSave').onclick=()=>{if(tSaved||tMark.some(m=>m===null))return;tSaved=true;let ok=0;
-  tDeck.forEach((x,i)=>{if(tMark[i]===1){ok++;wrong.delete(x.w)}else wrong.add(x.w);markSeen(x.w)});
-  saveWrong();bump(tDeck.length);const rr=getRound(),sc=ok;store.set('tests',store.get('tests',[]).concat([{d:Date.now(),s:sc,m:tDeck.length,lv:level,r:rr?rr.n:null,bad:tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w)}]).slice(-30));
-  if(rr){rr.hist=rr.hist.concat([{n:rr.n,s:sc,m:tDeck.length,d:Date.now()}]).slice(-50);rr.st.test=1;rr.fix=tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w);rr.wd=[];rr.st.write=rr.fix.length?0:1;saveRound();wDeck=writeDeck();wi=0;wOk=0;wBad=0;wLoad()}
-  $('tRes').querySelectorAll('.mk .btn').forEach(b=>b.disabled=true);tSummary();window.scrollTo(0,0)};
-$('tAgain').onclick=()=>{const gr=getRound();if(!gr){$('tDone').hidden=true;$('tStart').hidden=false;return}if(gr.st.test&&(gr.fix||[]).length&&!gr.st.write){show('write');return}startNextRound()};
+$('tSave').onclick=()=>{if(tSaved||tMark.some(m=>m===null))return;tSaved=true;let ok=0;rc++;
+  tDeck.forEach((x,i)=>{const w=x.w;seen.add(w);tally(tMark[i]===1);
+    if(tMark[i]===1){ok++;if(wrong.has(w)){wrong.delete(w);learning[w]=rc+1}else if(learning[w]!=null)delete learning[w]}
+    else{wrong.add(w);delete learning[w]}});
+  saveMem();const r=getRound();
+  store.set('tests',store.get('tests',[]).concat([{d:Date.now(),s:ok,m:tDeck.length,lv:level,r:r.n,bad:tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w)}]).slice(-30));
+  r.hist=r.hist.concat([{n:r.n,s:ok,m:tDeck.length,d:Date.now()}]).slice(-50);r.fix=tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w);r.fixed=[];r.step=r.fix.length?'fix':'done';saveRound();
+  $('tRes').querySelectorAll('.mk .btn').forEach(b=>b.disabled=true);tSummary();renderStepper();window.scrollTo(0,0)};
+$('tAgain').onclick=()=>{resetTest();openStep(getRound().step)};
 
-/* ---------- list ---------- */
-let shown=200;
-let lf='all';
-const stOf=x=>wrong.has(x.w)?'wrong':seen.has(x.w)?'done':'todo';
-function renderList(){const q=$('q').value.trim().toLowerCase();const base=pool(),nd=base.filter(x=>seen.has(x.w)).length;
-  const p=base.filter(x=>(lf==='all'||(lf==='done'?seen.has(x.w):lf==='wrong'?wrong.has(x.w):!seen.has(x.w)))&&(!q||x.w.toLowerCase().includes(q)||x.mean.includes(q)));
-  $('qCount').textContent=`ฝึกแล้ว ${nd} / ${base.length} คำ · แสดง ${p.length} คำ`;
-  $('tbody').innerHTML=p.slice(0,shown).map(x=>`<tr><td class="st st-${stOf(x)}" title="${{done:'เขียนถูกแล้ว',wrong:'ต้องทบทวน',todo:'ยังไม่ได้ฝึก'}[stOf(x)]}">${{done:'✓',wrong:'✗',todo:''}[stOf(x)]}</td><td class="w"><button class="say" data-i="${x.i}" aria-label="ฟังเสียง ${esc(x.w)}">🔊</button>${esc(x.w)}<div class="rd">${esc(x.read)} · <i>${esc(x.pos)}</i></div></td><td>${esc(x.read)}</td><td class="pos">${esc(x.pos)}</td><td>${esc(x.mean)}</td><td><span class="lvl">${x.lv==='X'?'ยาก+':x.lv==='K'?'แข่ง':x.lv}</span></td></tr>`).join('')||`<tr><td colspan="6" class="empty">ไม่พบคำ</td></tr>`;
+/* ---------- ③ write the missed words ---------- */
+let wDeck=[],wi=0;
+function fixDeck(){const r=getRound();return shuffle(r.fix.filter(w=>!r.fixed.includes(w)).map(byW).filter(Boolean))}
+function wCur(){return wDeck[wi]}
+function wLoad(){const r=getRound();
+  const x=wCur();strokes=[];redraw();$('wAns').hidden=true;$('wHint').hidden=true;
+  $('wCount').textContent=`รอบที่ ${r.n} · ฝึกคำที่ผิด เหลือ ${wDeck.length} คำ`;$('wScore').textContent=`ถูกแล้ว ${r.fixed.length} / ${r.fix.length}`;
+  if(!x){$('wLvl').textContent='';setW(true);return}
+  setW(false);$('wLvl').textContent=LV[x.lv]}
+function setW(dis){['wPlay','wWord','wHintPos','wHintSent','wHintMean','wHintRead','reveal','wSkip'].forEach(id=>$(id).disabled=dis)}
+function hint(html){$('wHint').innerHTML=html;$('wHint').hidden=false}
+$('wPlay').onclick=()=>{const x=wCur();if(x)speak([cW(x),cW(x),cS(x),cS(x),cW(x)])};
+$('wWord').onclick=()=>{const x=wCur();if(x)speak([cW(x)])};
+$('wHintPos').onclick=()=>{const x=wCur();hint(`<b>Part of speech:</b> ${esc(posName(x.pos))} (${esc(x.pos)})`);speak([cP(x)])};
+$('wHintSent').onclick=()=>{const x=wCur();hint(`<span class="sent">${maskSent(x)}</span>`);speak([cS(x)])};
+$('wHintMean').onclick=()=>{const x=wCur();hint(`<b>ความหมาย:</b> ${esc(x.mean)}`)};
+$('wHintRead').onclick=()=>{const x=wCur();hint(`<b>คำอ่าน:</b> <span class="read">${esc(x.read)}</span>`)};
+$('reveal').onclick=()=>{const x=wCur();if(!x)return;$('aWord').textContent=x.w;$('aLetters').innerHTML=letters(x.w);$('aRead').textContent=x.read;$('aPos').textContent=x.pos;$('aMean').textContent=x.mean;$('aTip').hidden=!x.tip;$('aTip').textContent=x.tip;$('wAns').hidden=false;$('wAns').scrollIntoView({block:'nearest',behavior:'smooth'})};
+function wNext(){if(wi>=wDeck.length)wi=0;wLoad()}
+$('markOk').onclick=()=>{const x=wCur();if(!x)return;const r=getRound();tally(1);
+  if(wrong.has(x.w)){wrong.delete(x.w);learning[x.w]=rc+1}saveMem();
+  if(!r.fixed.includes(x.w))r.fixed.push(x.w);wDeck.splice(wi,1);
+  if(r.fix.every(w=>r.fixed.includes(w))){r.step='done';saveRound();openStep('done');return}
+  saveRound();renderStepper();wNext()};
+$('markBad').onclick=()=>{const x=wCur();if(!x)return;tally(0);wDeck.push(wDeck.splice(wi,1)[0]);wNext()};
+$('wSkip').onclick=()=>{if(wDeck.length>1){wDeck.push(wDeck.splice(wi,1)[0])}wNext()};
+
+/* ---------- round summary ---------- */
+function renderDone(){const r=getRound(),h=r.hist[r.hist.length-1],p=pool(),kn=p.filter(x=>stateOf(x.w)==='known').length;
+  $('doneBody').innerHTML=`<h2 class="ph">🎉 จบรอบที่ ${r.n}</h2>`+(h?`<div class="tsum"><div class="score">${h.s} / ${h.m||20}</div><div>คะแนนสอบรอบนี้${r.fix.length?` · ฝึกคำที่ผิดครบ ${r.fix.length} คำแล้ว`:''}</div></div>`:'')+
+    `<p class="pd" style="margin-top:12px">${LV[level]}: จำได้แล้ว <b>${kn}</b> / ${p.length} คำ</p>`;
+  $('nextRound').textContent=`▶ เริ่มรอบที่ ${r.n+1}`+(p.length>ROUND?' (คำใหม่ 20 คำ)':'')}
+$('nextRound').onclick=()=>{newRound(getRound());resetTest();openStep('learn');window.scrollTo(0,0)};
+
+/* ---------- word list ---------- */
+let shown=200,lf='all';
+const ST={new:['','ยังไม่ได้ฝึก'],wrong:['✗','ต้องทบทวน'],learning:['◐','กำลังจำ (รอทวนอีกครั้ง)'],known:['✓','จำได้แล้ว']};
+function renderList(){const q=$('q').value.trim().toLowerCase();const base=pool();const cnt={all:base.length,new:0,wrong:0,learning:0,known:0};base.forEach(x=>cnt[stateOf(x.w)]++);
+  $('lf').innerHTML=[['all','ทั้งหมด'],['new','ยังไม่ได้ฝึก'],['wrong','✗ ต้องทบทวน'],['learning','◐ กำลังจำ'],['known','✓ จำได้แล้ว']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${k===lf}">${l} <small>${cnt[k]}</small></button>`).join('');
+  const p=base.filter(x=>(lf==='all'||stateOf(x.w)===lf)&&(!q||x.w.toLowerCase().includes(q)||x.mean.includes(q)));
+  $('qCount').textContent=`แสดง ${p.length} คำ`;
+  $('tbody').innerHTML=p.slice(0,shown).map(x=>{const s=stateOf(x.w);return`<tr><td class="st st-${s}" title="${ST[s][1]}">${ST[s][0]}</td><td class="w"><button class="say" data-i="${x.i}" aria-label="ฟังเสียง ${esc(x.w)}">🔊</button>${esc(x.w)}<div class="rd">${esc(x.read)} · <i>${esc(x.pos)}</i></div></td><td>${esc(x.read)}</td><td class="pos">${esc(x.pos)}</td><td>${esc(x.mean)}</td><td><span class="lvl">${x.lv==='X'?'ยาก+':x.lv==='K'?'แข่ง':x.lv}</span></td></tr>`}).join('')||`<tr><td colspan="6" class="empty">ไม่พบคำ</td></tr>`;
   $('more').hidden=p.length<=shown}
 $('q').addEventListener('input',()=>{shown=200;renderList()});
 $('more').onclick=()=>{shown+=200;renderList()};
-$('lf').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;lf=b.dataset.f;$('lf').querySelectorAll('[data-f]').forEach(c=>c.setAttribute('aria-pressed',c===b));shown=200;renderList()});
+$('lf').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;lf=b.dataset.f;shown=200;renderList()});
 $('tbody').addEventListener('click',e=>{const b=e.target.closest('.say');if(b){const x=W[+b.dataset.i];speak([cW(x)])}});
 
-function resetAll(){const p=pool(),rp=roundPool(),rr=getRound();$('stTotal').textContent=p.length;wDeck=writeDeck();wi=0;wOk=0;wBad=0;wLoad();lBase=lDeck=rp.slice();li=rr?0:Math.min(lpos[level]||0,Math.max(0,p.length-1));lLoad();renderRound();
-  clearInterval(tTimer);$('tRun').hidden=true;$('tDone').hidden=true;$('tStart').hidden=false;placePad('write');if(!$('v-list').hidden)renderList()}
+function resetAll(){resetTest();curStep=null;renderHead();const r=getRound();if(!$('v-list').hidden)renderList();else openStep(r.step)}
 
 /* ---------- dialogs ---------- */
 function openDlg(d){try{d.showModal()}catch(e){d.setAttribute('open','')}}
@@ -643,10 +685,9 @@ function closeDlg(d){try{d.close()}catch(e){d.removeAttribute('open')}}
 [$('setDlg'),$('helpDlg')].forEach(d=>{d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-close]'))closeDlg(d)})});
 $('setBtn').onclick=()=>openDlg($('setDlg'));
 $('helpBtn').onclick=()=>openDlg($('helpDlg'));
-$('helpDlg').addEventListener('close',()=>store.set('seenHelp',1));
-$('helpDlg').querySelector('[data-close]').addEventListener('click',()=>store.set('seenHelp',1));
-if(!store.get('seenHelp',0))setTimeout(()=>openDlg($('helpDlg')),300);
-renderFilters();$('stWrong').textContent=wrong.size;$('stDone').textContent=done;resetAll();preload();requestAnimationFrame(sizePad);
+$('helpDlg').addEventListener('close',()=>store.set('seenHelp',2));
+if(store.get('seenHelp',0)<2)setTimeout(()=>openDlg($('helpDlg')),300);
+renderFilters();resetAll();preload();requestAnimationFrame(sizePad);
 };
 </script>
 
