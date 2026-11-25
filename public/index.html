@@ -114,6 +114,8 @@ button:disabled{opacity:.45;cursor:default}
 table{border-collapse:collapse;width:100%;font-size:14.5px}
 th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-weight:600;color:var(--muted);font-size:12.5px;letter-spacing:.04em;position:sticky;top:0;background:var(--sheet)}
+td .rd{display:none}
+td.st{width:34px;text-align:center;font-weight:700}.st-done{color:var(--ok)}.st-wrong{color:var(--bad)}
 td.w{font:700 16px var(--f-word);white-space:nowrap}
 .say{appearance:none;border:1px solid var(--line);background:var(--chip);border-radius:10px;cursor:pointer;font-size:16px;width:36px;height:36px;margin-right:6px;color:var(--ink);vertical-align:middle}
 .notice{font-size:13.5px;color:var(--bad);margin:0}
@@ -141,6 +143,11 @@ dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
   .helpers .btn{flex-direction:row;min-height:46px}
   .letters span{width:28px;height:34px;font-size:17px}
   .sizebox input{width:80px}
+  header{flex-wrap:wrap}header h1{flex:1 1 100%;white-space:nowrap}.stats{margin-left:0;margin-right:auto}
+  #qCount{flex:1 1 100%}
+  table th:nth-child(3),table td:nth-child(3),table th:nth-child(4),table td:nth-child(4),table th:nth-child(6),table td:nth-child(6){display:none}
+  td.w{white-space:normal}td .rd{display:block;font:400 13px var(--f-body);color:var(--muted);margin:2px 0 0 42px}
+  #lf .chip{min-height:40px;padding:4px 12px;font-size:14px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
@@ -264,8 +271,9 @@ dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
 
   <!-- LIST -->
   <section id="v-list" hidden>
+    <div class="row" id="lf" style="margin-bottom:10px"><button class="chip" data-f="all" aria-pressed="true">ทั้งหมด</button><button class="chip" data-f="done" aria-pressed="false">✓ ฝึกแล้ว</button><button class="chip" data-f="todo" aria-pressed="false">ยังไม่ได้ฝึก</button><button class="chip" data-f="wrong" aria-pressed="false">✗ ต้องทบทวน</button></div>
     <div class="row" style="margin-bottom:10px"><input type="search" id="q" placeholder="🔎 ค้นหาคำศัพท์หรือคำแปล" style="flex:1;min-width:0"><span class="counter" id="qCount"></span></div>
-    <div class="tbl"><table><thead><tr><th>คำศัพท์ (กด 🔊 เพื่อฟัง)</th><th>คำอ่าน</th><th>ชนิด</th><th>คำแปล</th><th>ระดับ</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="tbl"><table><thead><tr><th title="สถานะ">✓</th><th>คำศัพท์ (กด 🔊 เพื่อฟัง)</th><th>คำอ่าน</th><th>ชนิด</th><th>คำแปล</th><th>ระดับ</th></tr></thead><tbody id="tbody"></tbody></table></div>
     <div class="row" style="margin-top:10px"><button class="btn" id="more" hidden>แสดงเพิ่ม</button></div>
   </section>
 </div>
@@ -308,7 +316,7 @@ let day=store.get('day',{d:'',n:0});if(day.d!==today())day={d:today(),n:0};let d
 function bump(k=1){done+=k;day={d:today(),n:done};store.set('day',day);$('stDone').textContent=done}
 let seen=new Set(store.get('seen',[]));
 function tally(ok){const s=store.get('tot',{ok:0,bad:0});s[ok?'ok':'bad']++;store.set('tot',s)}
-function markSeen(w){if(!seen.has(w)){seen.add(w);store.set('seen',[...seen])}}
+function markSeen(w){if(!seen.has(w)){seen.add(w);store.set('seen',[...seen]);try{renderFilters()}catch(e){}}}
 function buildDeck(p){const a=shuffle(p.filter(x=>!seen.has(x.w))),b=shuffle(p.filter(x=>seen.has(x.w)));return a.concat(b)}
 let lpos=store.get('lpos',{});
 const $=id=>document.getElementById(id);
@@ -317,6 +325,7 @@ const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random(
 function pool(){
   if(level==='ALL')return W;
   if(level==='WRONG')return W.filter(x=>wrong.has(x.w));
+  if(level==='DONE')return W.filter(x=>seen.has(x.w));
   return W.filter(x=>x.lv===level);
 }
 function saveWrong(){store.set('wrong',[...wrong]);$('stWrong').textContent=wrong.size;renderFilters()}
@@ -426,8 +435,8 @@ const letters=w=>[...w].map(c=>`<span>${esc(c)}</span>`).join('');
 
 /* ---------- filters ---------- */
 function renderFilters(){
-  const opts=[['B1',W.filter(x=>x.lv==='B1').length],['B2',W.filter(x=>x.lv==='B2').length],['C1',W.filter(x=>x.lv==='C1').length],['X',W.filter(x=>x.lv==='X').length],['ALL',W.length],['WRONG',wrong.size]];
-  $('filters').innerHTML=opts.map(([k,n])=>`<button class="chip" data-k="${k}" aria-pressed="${k===level}">${k==='ALL'?'ทั้งหมด':k==='WRONG'?'🔁 คำที่ต้องทบทวน':LV[k]} <small>${n}</small></button>`).join('');
+  const opts=[['B1',W.filter(x=>x.lv==='B1').length],['B2',W.filter(x=>x.lv==='B2').length],['C1',W.filter(x=>x.lv==='C1').length],['X',W.filter(x=>x.lv==='X').length],['ALL',W.length],['WRONG',wrong.size],['DONE',W.filter(x=>seen.has(x.w)).length]];
+  $('filters').innerHTML=opts.map(([k,n])=>`<button class="chip" data-k="${k}" aria-pressed="${k===level}">${k==='ALL'?'ทั้งหมด':k==='WRONG'?'🔁 คำที่ต้องทบทวน':k==='DONE'?'✓ ฝึกแล้ว':LV[k]} <small>${n}</small></button>`).join('');
 }
 $('filters').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;level=b.dataset.k;store.set('level',level);renderFilters();resetAll();preload()});
 
@@ -501,8 +510,8 @@ let wDeck=[],wi=0,wOk=0,wBad=0;
 function wCur(){return wDeck[wi]}
 function wLoad(){
   const x=wCur();strokes=[];redraw();$('wAns').hidden=true;$('wHint').hidden=true;
-  if(!x){$('wCount').textContent='';$('wLvl').textContent='';$('wHint').hidden=false;$('wHint').textContent=level==='WRONG'?'ยังไม่มีคำที่ต้องทบทวน เลือกระดับอื่นเพื่อฝึกต่อ':'ไม่มีคำในชุดนี้';setW(true);return}
-  setW(false);$('wLvl').textContent=LV[x.lv];const pp=pool(),ns=pp.filter(y=>seen.has(y.w)).length;$('wCount').textContent=level==='WRONG'?`เหลือ ${wDeck.length} คำ`:`เขียนแล้ว ${ns} / ${pp.length} คำ`;$('wReset').hidden=level==='WRONG'||ns<pp.length;
+  if(!x){$('wCount').textContent='';$('wLvl').textContent='';$('wHint').hidden=false;$('wHint').textContent=level==='DONE'?'ยังไม่มีคำที่ฝึกแล้ว เลือกระดับอื่นเพื่อเริ่มฝึก':level==='WRONG'?'ยังไม่มีคำที่ต้องทบทวน เลือกระดับอื่นเพื่อฝึกต่อ':'ไม่มีคำในชุดนี้';setW(true);return}
+  setW(false);$('wLvl').textContent=LV[x.lv];const pp=pool(),ns=pp.filter(y=>seen.has(y.w)).length;$('wCount').textContent=level==='WRONG'?`เหลือ ${wDeck.length} คำ`:level==='DONE'?`ทบทวนคำที่ ${wi+1} / ${wDeck.length}`:`เขียนแล้ว ${ns} / ${pp.length} คำ`;$('wReset').hidden=level==='WRONG'||level==='DONE'||ns<pp.length;
   $('wScore').textContent=`ถูก ${wOk} · ผิด ${wBad}`;
 }
 function setW(dis){['wPlay','wWord','wHintPos','wHintSent','wHintMean','wHintRead','reveal','wSkip'].forEach(id=>$(id).disabled=dis)}
@@ -549,15 +558,19 @@ $('tAgain').onclick=()=>{$('tDone').hidden=true;$('tStart').hidden=false};
 
 /* ---------- list ---------- */
 let shown=200;
-function renderList(){const q=$('q').value.trim().toLowerCase();const p=pool().filter(x=>!q||x.w.toLowerCase().includes(q)||x.mean.includes(q));
-  $('qCount').textContent=`${p.length} คำ`;
-  $('tbody').innerHTML=p.slice(0,shown).map(x=>`<tr><td class="w"><button class="say" data-i="${x.i}" aria-label="ฟังเสียง ${esc(x.w)}">🔊</button>${esc(x.w)}</td><td>${esc(x.read)}</td><td class="pos">${esc(x.pos)}</td><td>${esc(x.mean)}</td><td><span class="lvl">${x.lv==='X'?'ยาก+':x.lv}</span></td></tr>`).join('')||`<tr><td colspan="5" class="empty">ไม่พบคำ</td></tr>`;
+let lf='all';
+const stOf=x=>wrong.has(x.w)?'wrong':seen.has(x.w)?'done':'todo';
+function renderList(){const q=$('q').value.trim().toLowerCase();const base=pool(),nd=base.filter(x=>seen.has(x.w)).length;
+  const p=base.filter(x=>(lf==='all'||(lf==='done'?seen.has(x.w):lf==='wrong'?wrong.has(x.w):!seen.has(x.w)))&&(!q||x.w.toLowerCase().includes(q)||x.mean.includes(q)));
+  $('qCount').textContent=`ฝึกแล้ว ${nd} / ${base.length} คำ · แสดง ${p.length} คำ`;
+  $('tbody').innerHTML=p.slice(0,shown).map(x=>`<tr><td class="st st-${stOf(x)}" title="${{done:'เขียนถูกแล้ว',wrong:'ต้องทบทวน',todo:'ยังไม่ได้ฝึก'}[stOf(x)]}">${{done:'✓',wrong:'✗',todo:''}[stOf(x)]}</td><td class="w"><button class="say" data-i="${x.i}" aria-label="ฟังเสียง ${esc(x.w)}">🔊</button>${esc(x.w)}<div class="rd">${esc(x.read)} · <i>${esc(x.pos)}</i></div></td><td>${esc(x.read)}</td><td class="pos">${esc(x.pos)}</td><td>${esc(x.mean)}</td><td><span class="lvl">${x.lv==='X'?'ยาก+':x.lv}</span></td></tr>`).join('')||`<tr><td colspan="6" class="empty">ไม่พบคำ</td></tr>`;
   $('more').hidden=p.length<=shown}
 $('q').addEventListener('input',()=>{shown=200;renderList()});
 $('more').onclick=()=>{shown+=200;renderList()};
+$('lf').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;lf=b.dataset.f;$('lf').querySelectorAll('[data-f]').forEach(c=>c.setAttribute('aria-pressed',c===b));shown=200;renderList()});
 $('tbody').addEventListener('click',e=>{const b=e.target.closest('.say');if(b){const x=W[+b.dataset.i];speak([cW(x)])}});
 
-function resetAll(){const p=pool();$('stTotal').textContent=p.length;wDeck=level==='WRONG'?shuffle(p):buildDeck(p);wi=0;wOk=0;wBad=0;wLoad();lBase=lDeck=p.slice();li=Math.min(lpos[level]||0,Math.max(0,p.length-1));lLoad();
+function resetAll(){const p=pool();$('stTotal').textContent=p.length;wDeck=(level==='WRONG'||level==='DONE')?shuffle(p):buildDeck(p);wi=0;wOk=0;wBad=0;wLoad();lBase=lDeck=p.slice();li=Math.min(lpos[level]||0,Math.max(0,p.length-1));lLoad();
   clearInterval(tTimer);$('tRun').hidden=true;$('tDone').hidden=true;$('tStart').hidden=false;if(!$('v-list').hidden)renderList()}
 
 /* ---------- dialogs ---------- */
