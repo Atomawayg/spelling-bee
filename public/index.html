@@ -569,11 +569,12 @@ function roundWords(){return getRound().words.map(byW).filter(Boolean)}
 
 let curStep=null;
 function renderStepper(){const r=getRound(),s=r.step,done={learn:s!=='learn',test:s==='fix'||s==='done',fix:s==='done'};
-  const can={learn:true,test:s==='learn'||s==='test',fix:s==='fix'||s==='done'};
+  const can={learn:true,test:s!=='fix',fix:s==='fix'||s==='done'};
   const lab={learn:'① ท่องจำ',test:'② สอบ',fix:r.fix.length&&s!=='learn'&&s!=='test'?`③ ฝึกคำที่ผิด ${r.fixed.length}/${r.fix.length}`:'③ ฝึกคำที่ผิด'};
-  $('stepper').innerHTML=`<span class="rn">รอบที่ ${r.n}</span>`+['learn','test','fix'].map((k,i)=>`${i?'<span class="arr">›</span>':''}<button class="rs${done[k]?' done':''}${curStep===k?' cur':''}" data-step="${k}" ${can[k]?'':'disabled'}>${lab[k]}${done[k]?' ✓':''}</button>`).join('')+
-    (r.hist.length?`<span class="hist">ผลแต่ละรอบ: ${r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.s}/${h.m||20}</b>`).join(' · ')}</span>`:'')}
-$('stepper').addEventListener('click',e=>{const b=e.target.closest('[data-step]');if(b&&!b.disabled)openStep(b.dataset.step)});
+  $('stepper').innerHTML=`<span class="rn">รอบที่ ${r.n}${s==='done'?' · จบแล้ว':''}</span>`+['learn','test','fix'].map((k,i)=>`${i?'<span class="arr">›</span>':''}<button class="rs${done[k]?' done':''}${curStep===k?' cur':''}" data-step="${k}" ${can[k]?'':'disabled'}>${lab[k]}${done[k]?' ✓':''}</button>`).join('')+
+    (s==='done'?`<span class="hist">กด ① หรือ ② เพื่อเริ่มรอบที่ ${r.n+1} ได้เลย</span>`:'')+(r.hist.length?`<span class="hist">ผลแต่ละรอบ: ${r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.s}/${h.m||20}</b>`).join(' · ')}</span>`:'')}
+$('stepper').addEventListener('click',e=>{const b=e.target.closest('[data-step]');if(!b||b.disabled)return;const k=b.dataset.step;
+  if(getRound().step==='done'&&(k==='learn'||k==='test')){newRound(getRound());resetTest();openStep(k);window.scrollTo(0,0);return}openStep(k)});
 function openStep(s){const r=getRound();if(s==='test'&&!(r.step==='learn'||r.step==='test'))s=r.step==='done'?'done':'fix';if(s==='fix'&&r.step==='done')s='done';
   curStep=s;stopSpeak();
   $('v-learn').hidden=s!=='learn';$('v-test').hidden=s!=='test';$('v-write').hidden=s!=='fix';$('v-done').hidden=s!=='done';
