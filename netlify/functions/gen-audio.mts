@@ -1,5 +1,6 @@
 // Background job: synthesizes every clip with the chosen voice into Blobs, then packs bundles + index.
-// Re-invokes itself before the 15-minute limit until everything is done. Protected by the teacher PIN.
+// Re-invokes itself before the 15-minute limit until everything is done. No PIN: it only fills missing clips
+// and repacks, so anyone may start it (the teacher asked for this).
 import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 import { getStore } from "@netlify/blobs";
 import { CLIPS, BUNDLES, VOICE, RATE, VERSION } from "./lib/clips.mts";
@@ -19,9 +20,9 @@ function synth(tts: MsEdgeTTS, text: string): Promise<Buffer> {
   });
 }
 
+const again = (req: Request) => fetch(new URL("/api/gen-audio", req.url), { method: "POST" });
+
 export default async (req: Request) => {
-  const pin = Netlify.env.get("TEACHER_PIN");
-  if (!pin || req.headers.get("x-pin") !== pin) return;
   const clips = getStore(`clips-${VERSION}`);
   const out = getStore(`audio-${VERSION}`);
   const status = async (s: object) => out.setJSON("status.json", { ...s, updated: Date.now() });
@@ -36,7 +37,7 @@ export default async (req: Request) => {
   for (const c of todo) {
     if (Date.now() > deadline) {
       await status({ phase: "generating", done, total: CLIPS.length, failed: failed.length });
-      await fetch(new URL("/api/gen-audio", req.url), { method: "POST", headers: { "x-pin": pin } });
+      await again(req);
       return;
     }
     let ok = false;
@@ -59,7 +60,13 @@ export default async (req: Request) => {
   if (failed.length) {
     // try the failures again on a fresh run
     await status({ phase: "retrying", done, total: CLIPS.length, failed: failed.length, failedNames: failed.slice(0, 50) });
-    await fetch(new URL("/api/gen-audio", req.url), { method: "POST", headers: { "x-pin": pin } });
+    await again(req);
+    return;
+  }
+  if (todo.length) {
+    // packing reads every clip; give it a fresh 15-minute run instead of what is left of this one
+    await status({ phase: "packing", done, total: CLIPS.length, failed: 0 });
+    await again(req);
     return;
   }
 
@@ -70,8 +77,9 @@ export default async (req: Request) => {
     index.f.push(`api/audio/${VERSION}/${b.file}`);
     const parts: Buffer[] = [];
     let off = 0;
-    for (const n of b.names) {
-      const ab = await clips.get(n, { type: "arrayBuffer" });
+    const got = await Promise.all(b.names.map((n) => clips.get(n, { type: "arrayBuffer" })));
+    for (let k = 0; k < b.names.length; k++) {
+      const n = b.names[k], ab = got[k];
       if (!ab) continue;
       const buf = Buffer.from(ab);
       parts.push(buf);

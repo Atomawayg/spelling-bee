@@ -16,9 +16,9 @@ github.com/Atomawayg/spelling-bee (repo is public so the free plan accepts the c
   A sentence starting with "Remember…" is a spelling tip; the part after the first ". " is the spoken sentence.
 - `netlify/functions/progress.mts` — `/api/progress` GET/POST one student's saved state (Netlify Blobs store `students`, key = class/name).
 - `netlify/functions/teacher.mts` — `/api/teacher` list/delete students; needs header `x-pin` = env `TEACHER_PIN`.
-- `netlify/functions/gen-audio.mts` — background job `/api/gen-audio` (POST, header `x-pin`): makes every missing clip with
+- `netlify/functions/gen-audio.mts` — background job `/api/gen-audio` (POST, no PIN — teacher's choice): makes every missing clip with
   Microsoft Edge neural voice **en-US-JennyNeural, rate -10%** (npm `msedge-tts`), stores clips in Blobs, then packs bundles
-  and `index.json`. Re-invokes itself until done. Progress: `/api/audio/status.json`.
+  and `index.json` (packing always gets a fresh run). Re-invokes itself until done. Progress: `/api/audio/status.json`.
 - `netlify/functions/audio.mts` — serves `/api/audio/index.json` and `/api/audio/<VERSION>/<bundle>.mp3` (cached forever;
   bundle names include the clip count so a changed bundle gets a new URL).
 - `netlify/functions/lib/clips.mts` — which clips exist and how they are bundled. `VERSION` change = regenerate everything.
@@ -35,9 +35,9 @@ github.com/Atomawayg/spelling-bee (repo is public so the free plan accepts the c
 
 ## After adding words
 1. Append rows to `netlify/functions/lib/words.json`, run `python3 src/build.py`, commit, push (wait ~1 min for deploy).
-2. Generate their audio: `POST https://spellingbee-rattanabundit.netlify.app/api/gen-audio` with header `x-pin: <TEACHER_PIN>`,
+2. Generate their audio: `POST https://spellingbee-rattanabundit.netlify.app/api/gen-audio` (no header needed),
    then poll `/api/audio/status.json` until `"phase":"ready"` (~200 clips/min).
-   This sandbox cannot reach netlify.app / api.netlify.com directly; use the user's Chrome (Claude in Chrome) to send it.
+   (`curl -X POST` works from the user's Windows machine.)
 
 ## Testing
 No Netlify CLI dev here (edge runtime download is blocked). A small Node mock of the functions + Playwright was used:
