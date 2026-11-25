@@ -16,12 +16,15 @@ export default async (req: Request) => {
   const cached = await store.get(key, { type: "arrayBuffer" });
   if (cached) return new Response(cached, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=86400" } });
   try {
-    const res = await new EdgeTTS(t, v, { rate: r }).synthesize();
+    const res: any = await Promise.race([
+      new EdgeTTS(t, v, { rate: r }).synthesize(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout after 8s")), 8000)),
+    ]);
     const buf = await res.audio.arrayBuffer();
     await store.set(key, buf);
     return new Response(buf, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=86400" } });
   } catch (e) {
-    return new Response("tts failed: " + String(e), { status: 502 });
+    return new Response("tts failed: " + String((e as any)?.stack || e).slice(0, 800), { status: 502 });
   }
 };
 
