@@ -84,7 +84,7 @@ document.querySelector('thead').onclick=e=>{const th=e.target.closest('th');if(!
 $('tb').onclick=e=>{const tr=e.target.closest('tr[data-k]');if(!tr)return;cur=rows.find(r=>r.key===tr.dataset.k);if(!cur)return;
   $('ddBody').innerHTML=`<h2 style="font:800 22px var(--f-display);margin:0 0 4px">${esc(cur.name)}</h2><p class="muted" style="margin:0 0 12px">${esc(cur.cls)} · ใช้งานล่าสุด ${fmt(cur.updated)}</p>
   <p style="margin:0 0 4px"><b>คำที่ต้องทบทวน (${cur.wrongList.length})</b></p><div>${cur.wrongList.map(w=>`<span class="w">${esc(w)}</span>`).join('')||'<span class="muted">ไม่มี</span>'}</div>
-  <p style="margin:14px 0 4px"><b>ผลสอบ 20 คำ</b></p>${cur.tests.length?cur.tests.slice().reverse().map(t=>`<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0"><b style="min-width:70px">${t.s}/100</b><span class="muted">${fmt(t.d)}</span><span class="muted">${esc(t.lv||'')}</span></div>`).join(''):'<span class="muted">ยังไม่เคยสอบ</span>'}`;
+  <p style="margin:14px 0 4px"><b>ผลสอบ 20 คำ</b></p>${cur.tests.length?cur.tests.slice().reverse().map(t=>`<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0"><b style="min-width:70px">${t.s}/100</b><span class="muted">${fmt(t.d)}</span><span class="muted">${t.r?'รอบ '+t.r+' · ':''}${esc(t.lv||'')}</span></div>`).join(''):'<span class="muted">ยังไม่เคยสอบ</span>'}`;
   try{$('dd').showModal()}catch(_){$('dd').setAttribute('open','')}};
 $('ddClose').onclick=()=>$('dd').close();
 $('del').onclick=async()=>{if(!cur)return;if($('del').dataset.sure!=='1'){$('del').dataset.sure='1';$('del').textContent='กดอีกครั้งเพื่อยืนยันการลบ';return}
