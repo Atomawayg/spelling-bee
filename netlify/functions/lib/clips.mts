@@ -30,7 +30,7 @@ words.forEach((x, i) => {
 });
 
 export const BUNDLES: { file: string; names: string[] }[] = [{ file: "c.mp3", names: [...seenPos] }];
-for (const lv of ["X", "B2", "C1", "B1"]) {
+for (const lv of ["X", "B2", "C1", "B1", "K"]) {
   const idx = words.map((x, i) => (x[5] === lv ? i : -1)).filter((i) => i >= 0);
   for (let k = 0; k < idx.length; k += 100) {
     BUNDLES.push({ file: `${lv.toLowerCase()}${k / 100}.mp3`, names: idx.slice(k, k + 100).flatMap((i) => [`w${i}`, `s${i}`]) });
