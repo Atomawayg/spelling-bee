@@ -57,9 +57,10 @@ const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 let pin='',rows=[],sortK='updated',sortDir=-1,cur=null;
 try{pin=sessionStorage.getItem('tpin')||''}catch(e){}
 const fmt=ms=>ms?new Date(ms).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
+const sc=t=>t.m?`${t.s}/${t.m}`:`${Math.round(t.s/5)}/20`;const sv=t=>t.m?t.s/t.m*20:t.s/5;
 function summary(r){const s=r.state||{},t=s.tot||{ok:0,bad:0},tests=s.tests||[];const n=t.ok+t.bad;
   return{key:r.key,name:r.name,cls:r.cls,updated:r.updated||0,written:(s.seen||[]).length,acc:n?Math.round(t.ok/n*100):null,wrong:(s.wrong||[]).length,
-    test:tests.length?tests[tests.length-1].s:null,best:tests.length?Math.max(...tests.map(x=>x.s)):null,wrongList:s.wrong||[],tests}}
+    test:tests.length?sv(tests[tests.length-1]):null,testTxt:tests.length?sc(tests[tests.length-1]):'-',best:tests.length?Math.max(...tests.map(sv)):null,wrongList:s.wrong||[],tests}}
 async function load(){
   $('gErr').hidden=true;
   try{const r=await fetch('/api/teacher',{headers:{'x-pin':pin},cache:'no-store'});
@@ -73,9 +74,9 @@ function view(){const c=$('fCls').value,q=$('q').value.trim().toLowerCase();
   return rows.filter(r=>(!c||r.cls===c)&&(!q||r.name.toLowerCase().includes(q))).sort((a,b)=>{const x=a[sortK],y=b[sortK];if(x===y)return 0;if(x==null)return 1;if(y==null)return -1;return(x>y?1:-1)*sortDir})}
 function render(){const v=view();
   const act=v.filter(r=>Date.now()-r.updated<7*864e5).length,avgT=v.filter(r=>r.test!=null);
-  $('cards').innerHTML=[['นักเรียน',v.length],['ใช้งานใน 7 วัน',act],['คำที่เขียนรวม',v.reduce((a,r)=>a+r.written,0)],['คะแนนสอบล่าสุดเฉลี่ย',avgT.length?Math.round(avgT.reduce((a,r)=>a+r.test,0)/avgT.length):'-']]
+  $('cards').innerHTML=[['นักเรียน',v.length],['ใช้งานใน 7 วัน',act],['คำที่เขียนรวม',v.reduce((a,r)=>a+r.written,0)],['คะแนนสอบล่าสุดเฉลี่ย (เต็ม 20)',avgT.length?(avgT.reduce((a,r)=>a+r.test,0)/avgT.length).toFixed(1):'-']]
     .map(([k,n])=>`<div class="card"><b>${n}</b><span class="muted">${k}</span></div>`).join('');
-  $('tb').innerHTML=v.length?v.map(r=>`<tr data-k="${esc(r.key)}"><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.written}</td><td>${r.acc==null?'-':r.acc+'%'}</td><td>${r.wrong}</td><td>${r.test==null?'-':r.test}</td><td>${r.best==null?'-':r.best}</td><td>${fmt(r.updated)}</td></tr>`).join('')
+  $('tb').innerHTML=v.length?v.map(r=>`<tr data-k="${esc(r.key)}"><td><b>${esc(r.name)}</b></td><td>${esc(r.cls)}</td><td>${r.written}</td><td>${r.acc==null?'-':r.acc+'%'}</td><td>${r.wrong}</td><td>${r.testTxt}</td><td>${r.best==null?'-':Math.round(r.best)+'/20'}</td><td>${fmt(r.updated)}</td></tr>`).join('')
     :`<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">ยังไม่มีนักเรียนบันทึกข้อมูล</td></tr>`}
 $('go').onclick=()=>{pin=$('pin').value.trim();load()};
 $('pin').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
@@ -84,7 +85,7 @@ document.querySelector('thead').onclick=e=>{const th=e.target.closest('th');if(!
 $('tb').onclick=e=>{const tr=e.target.closest('tr[data-k]');if(!tr)return;cur=rows.find(r=>r.key===tr.dataset.k);if(!cur)return;
   $('ddBody').innerHTML=`<h2 style="font:800 22px var(--f-display);margin:0 0 4px">${esc(cur.name)}</h2><p class="muted" style="margin:0 0 12px">${esc(cur.cls)} · ใช้งานล่าสุด ${fmt(cur.updated)}</p>
   <p style="margin:0 0 4px"><b>คำที่ต้องทบทวน (${cur.wrongList.length})</b></p><div>${cur.wrongList.map(w=>`<span class="w">${esc(w)}</span>`).join('')||'<span class="muted">ไม่มี</span>'}</div>
-  <p style="margin:14px 0 4px"><b>ผลสอบ 20 คำ</b></p>${cur.tests.length?cur.tests.slice().reverse().map(t=>`<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0"><b style="min-width:70px">${t.s}/100</b><span class="muted">${fmt(t.d)}</span><span class="muted">${t.r?'รอบ '+t.r+' · ':''}${esc(t.lv||'')}</span></div>`).join(''):'<span class="muted">ยังไม่เคยสอบ</span>'}`;
+  <p style="margin:14px 0 4px"><b>ผลสอบ 20 คำ</b></p>${cur.tests.length?cur.tests.slice().reverse().map(t=>`<div class="row" style="border-bottom:1px solid var(--line);padding:6px 0"><b style="min-width:70px">${sc(t)}</b><span class="muted">${fmt(t.d)}</span><span class="muted">${t.r?'รอบ '+t.r+' · ':''}${esc(t.lv||'')}</span></div>`).join(''):'<span class="muted">ยังไม่เคยสอบ</span>'}`;
   try{$('dd').showModal()}catch(_){$('dd').setAttribute('open','')}};
 $('ddClose').onclick=()=>$('dd').close();
 $('del').onclick=async()=>{if(!cur)return;if($('del').dataset.sure!=='1'){$('del').dataset.sure='1';$('del').textContent='กดอีกครั้งเพื่อยืนยันการลบ';return}
@@ -93,7 +94,7 @@ $('del').onclick=async()=>{if(!cur)return;if($('del').dataset.sure!=='1'){$('del
 $('dd').addEventListener('close',()=>{$('del').dataset.sure='';$('del').textContent='ลบข้อมูลนักเรียนคนนี้'});
 $('csv').onclick=()=>{const v=view();const head=['ชื่อ','ชั้น','เขียนแล้ว','ถูก%','ต้องทบทวน','สอบล่าสุด','สอบสูงสุด','ใช้งานล่าสุด','คำที่ต้องทบทวน'];
   const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
-  const csv='﻿'+[head.map(q).join(',')].concat(v.map(r=>[r.name,r.cls,r.written,r.acc??'',r.wrong,r.test??'',r.best??'',fmt(r.updated),r.wrongList.join(' ')].map(q).join(','))).join('\n');
+  const csv='﻿'+[head.map(q).join(',')].concat(v.map(r=>[r.name,r.cls,r.written,r.acc??'',r.wrong,r.testTxt==='-'?'':r.testTxt,r.best==null?'':Math.round(r.best)+'/20',fmt(r.updated),r.wrongList.join(' ')].map(q).join(','))).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='spelling-bee-results.csv';a.click()};
 if(pin)load();
 })();

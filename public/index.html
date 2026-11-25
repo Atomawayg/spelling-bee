@@ -278,7 +278,7 @@ dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
   <section id="v-test" class="panel" hidden>
     <div id="tStart">
       <h2 style="font-family:var(--f-display);margin:0 0 6px">สอบเหมือนสนามจริง</h2>
-      <p style="margin:0 0 14px;color:var(--muted)">ระบบอ่านคำละ 2 ครั้ง พร้อมประโยค 2 ครั้ง ให้<b>เขียน</b>คำที่ได้ยินลงในช่อง 20 คำ คำละ 5 คะแนน (เต็ม 100) เป็นคำ 20 คำของรอบนี้ จบแล้วดูเฉลยและตรวจทีละข้อ</p>
+      <p style="margin:0 0 14px;color:var(--muted)">ระบบอ่านคำละ 2 ครั้ง พร้อมประโยค 2 ครั้ง ให้<b>เขียน</b>คำที่ได้ยินลงในช่อง 20 คำ คำละ 1 คะแนน (เต็ม 20) เป็นคำ 20 คำของรอบนี้ จบแล้วดูเฉลยและตรวจทีละข้อ</p>
       <button class="btn primary big" id="tGo">▶ เริ่มสอบ</button>
     </div>
     <div id="tRun" hidden>
@@ -575,7 +575,7 @@ function renderRound(){const r=getRound(),bar=$('roundBar');if(!r){bar.hidden=tr
   const fx=r.fix||[],steps=[['learn','① ท่องจำ'],['test','② สอบ'],['write',r.st.test?`③ ฝึกคำที่ผิด ${fx.filter(w=>r.wd.includes(w)).length}/${fx.length}`:'③ ฝึกคำที่ผิด']];const nx=steps.find(([k])=>!r.st[k]);
   const pp=pool(),nd=pp.filter(x=>seen.has(x.w)).length;
   bar.innerHTML=`<span class="rn">รอบที่ ${r.n}</span>`+steps.map(([k,l],i)=>`${i?'<span class="arr">→</span>':''}<button class="rs${r.st[k]?' done':nx&&nx[0]===k?' next':''}" data-go="${k}">${l}${r.st[k]?' ✓':''}</button>`).join('')+(r.st.test&&r.st.write?`<button class="rs next" data-next="1">▶ เริ่มรอบที่ ${r.n+1}</button>`:'')+
-    `<span class="hist">${r.hist.length?'ผลแต่ละรอบ: '+r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.s}</b>`).join(' · ')+' · ':''}ทั้งชุดฝึกแล้ว ${nd} / ${pp.length} คำ</span>`}
+    `<span class="hist">${r.hist.length?'ผลแต่ละรอบ: '+r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.m?h.s+'/'+h.m:h.s+'%'}</b>`).join(' · ')+' · ':''}ทั้งชุดฝึกแล้ว ${nd} / ${pp.length} คำ</span>`}
 $('roundBar').addEventListener('click',e=>{if(e.target.closest('[data-next]')){startNextRound();return}const b=e.target.closest('[data-go]');if(b)show(b.dataset.go)});
 function startNextRound(){const r=getRound();if(!r)return;newRound(r);resetAll();show('learn')}
 
@@ -601,7 +601,7 @@ $('tPlay').onclick=tPlay;
 $('tPos').onclick=()=>{const x=tDeck[ti];$('tHint').textContent=posName(x.pos);$('tHint').hidden=false};
 $('tSubmit').onclick=()=>{tAns.push(snap());tMark.push(tAns[ti]?null:0);ti++;if(ti<tDeck.length)tShow();else tFinish()};
 function tSummary(){const marked=tMark.filter(m=>m!==null).length,ok=tMark.filter(m=>m===1).length,s=(Date.now()-tStartT)/1000|0;
-  $('tSum').innerHTML=tSaved?`<div class="score">${Math.round(ok/tDeck.length*100)} / 100</div><div>ถูก <b>${ok}</b> จาก ${tDeck.length} คำ · ใช้เวลา ${esc($('tTime').textContent.replace('⏱ ',''))} นาที</div><div class="counter" style="flex-basis:100%">คำที่ผิดถูกเพิ่มเข้า 🔁 คำที่ต้องทบทวน แล้ว</div>`
+  $('tSum').innerHTML=tSaved?`<div class="score">${ok} / ${tDeck.length}</div><div>ถูก <b>${ok}</b> จาก ${tDeck.length} คำ · ใช้เวลา ${esc($('tTime').textContent.replace('⏱ ',''))} นาที</div><div class="counter" style="flex-basis:100%">คำที่ผิดถูกเพิ่มเข้า 🔁 คำที่ต้องทบทวน แล้ว</div>`
     :`<div><b>ตรวจคำตอบ</b> เทียบลายมือกับเฉลย แล้วกด ✓ หรือ ✗ ทุกข้อ</div><div class="counter">ตรวจแล้ว ${marked} / ${tDeck.length} ข้อ · ถูก ${ok}</div>`;
   $('tSave').disabled=marked<tDeck.length;$('tSave').hidden=tSaved;$('tAgain').hidden=!tSaved;const gr=getRound();$('tAgain').textContent=!gr?'🔄 สอบอีกชุด':(gr.st.test&&(gr.fix||[]).length&&!gr.st.write)?`③ ไปฝึกเขียนคำที่ผิด (${gr.fix.length} คำ) →`:`▶ เริ่มรอบที่ ${gr.n+1} (คำใหม่ 20 คำ)`}
 function tFinish(){clearInterval(tTimer);stopSpeak();placePad('write');$('tRun').hidden=true;$('tDone').hidden=false;
@@ -615,8 +615,8 @@ $('tRes').addEventListener('click',e=>{const s=e.target.closest('[data-w]');if(s
   it.classList.toggle('y',m===1);it.classList.toggle('n',m===0);it.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.m===m));tSummary()});
 $('tSave').onclick=()=>{if(tSaved||tMark.some(m=>m===null))return;tSaved=true;let ok=0;
   tDeck.forEach((x,i)=>{if(tMark[i]===1){ok++;wrong.delete(x.w)}else wrong.add(x.w);markSeen(x.w)});
-  saveWrong();bump(tDeck.length);const rr=getRound(),sc=Math.round(ok/tDeck.length*100);store.set('tests',store.get('tests',[]).concat([{d:Date.now(),s:sc,lv:level,r:rr?rr.n:null,bad:tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w)}]).slice(-30));
-  if(rr){rr.hist=rr.hist.concat([{n:rr.n,s:sc,d:Date.now()}]).slice(-50);rr.st.test=1;rr.fix=tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w);rr.wd=[];rr.st.write=rr.fix.length?0:1;saveRound();wDeck=writeDeck();wi=0;wOk=0;wBad=0;wLoad()}
+  saveWrong();bump(tDeck.length);const rr=getRound(),sc=ok;store.set('tests',store.get('tests',[]).concat([{d:Date.now(),s:sc,m:tDeck.length,lv:level,r:rr?rr.n:null,bad:tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w)}]).slice(-30));
+  if(rr){rr.hist=rr.hist.concat([{n:rr.n,s:sc,m:tDeck.length,d:Date.now()}]).slice(-50);rr.st.test=1;rr.fix=tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w);rr.wd=[];rr.st.write=rr.fix.length?0:1;saveRound();wDeck=writeDeck();wi=0;wOk=0;wBad=0;wLoad()}
   $('tRes').querySelectorAll('.mk .btn').forEach(b=>b.disabled=true);tSummary();window.scrollTo(0,0)};
 $('tAgain').onclick=()=>{const gr=getRound();if(!gr){$('tDone').hidden=true;$('tStart').hidden=false;return}if(gr.st.test&&(gr.fix||[]).length&&!gr.st.write){show('write');return}startNextRound()};
 
