@@ -314,7 +314,7 @@ dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
 <dialog id="helpDlg">
   <h2>วิธีใช้ 3 ขั้น</h2>
   <ol class="guide">
-    <li><span class="num">1</span><div><b>เลือกระดับคำ</b> แอปแบ่งเป็น<b>รอบละ 20 คำ</b> ทำตามแถบรอบ: ① ท่องจำ → ② ฝึกเขียน → ③ สอบ สอบเสร็จจะขึ้นรอบใหม่ให้ คำที่เคยผิดจะวนกลับมาทวน</div></li>
+    <li><span class="num">1</span><div><b>เลือกระดับคำ</b> แอปแบ่งเป็น<b>รอบละ 20 คำ</b> ทำตามแถบรอบ: ① ท่องจำ → ② สอบ → ③ ฝึกเขียนเฉพาะคำที่ผิด ครบแล้วเริ่มรอบใหม่ คำที่เคยผิดจะวนกลับมาทวน</div></li>
     <li><span class="num">2</span><div><b>เขียนคำ</b> ลงในช่องด้วย Apple Pencil หรือนิ้ว ถ้าไม่แน่ใจกด <b>💡 ตัวช่วย</b></div></li>
     <li><span class="num">3</span><div>กด <b>👀 ดูเฉลย</b> แล้วเลือกว่าเขียนถูกหรือผิด คำที่ผิดจะเก็บไว้ใน <b>🔁 คำที่ต้องทบทวน</b></div></li>
   </ol>
@@ -536,8 +536,8 @@ let wDeck=[],wi=0,wOk=0,wBad=0;
 function wCur(){return wDeck[wi]}
 function wLoad(){
   const x=wCur();strokes=[];redraw();$('wAns').hidden=true;$('wHint').hidden=true;
-  if(!x){$('wCount').textContent='';$('wLvl').textContent='';$('wHint').hidden=false;$('wHint').textContent=level==='DONE'?'ยังไม่มีคำที่ฝึกแล้ว เลือกระดับอื่นเพื่อเริ่มฝึก':level==='WRONG'?'ยังไม่มีคำที่ต้องทบทวน เลือกระดับอื่นเพื่อฝึกต่อ':'ไม่มีคำในชุดนี้';setW(true);return}
-  setW(false);$('wLvl').textContent=LV[x.lv];const pp=pool(),ns=pp.filter(y=>seen.has(y.w)).length;const rr=getRound();$('wCount').textContent=rr?`รอบที่ ${rr.n} · เขียนแล้ว ${Math.min(rr.wd.length,rr.words.length)} / ${rr.words.length} คำ`:level==='WRONG'?`เหลือ ${wDeck.length} คำ`:level==='DONE'?`ทบทวนคำที่ ${wi+1} / ${wDeck.length}`:`เขียนแล้ว ${ns} / ${pp.length} คำ`;$('wReset').hidden=true;
+  if(!x){$('wCount').textContent='';$('wLvl').textContent='';$('wHint').hidden=false;$('wHint').textContent=fixMode()?'🎉 ฝึกคำที่ผิดครบแล้ว กด ▶ เริ่มรอบถัดไป ที่แถบด้านบน':level==='DONE'?'ยังไม่มีคำที่ฝึกแล้ว เลือกระดับอื่นเพื่อเริ่มฝึก':level==='WRONG'?'ยังไม่มีคำที่ต้องทบทวน เลือกระดับอื่นเพื่อฝึกต่อ':'ไม่มีคำในชุดนี้';setW(true);return}
+  setW(false);$('wLvl').textContent=LV[x.lv];const pp=pool(),ns=pp.filter(y=>seen.has(y.w)).length;const rr=getRound();$('wCount').textContent=rr?(rr.st.test?`รอบที่ ${rr.n} · ฝึกคำที่ผิด เหลือ ${wDeck.length} คำ`:`รอบที่ ${rr.n} · ฝึกเขียนก่อนสอบ (ไม่บังคับ)`):level==='WRONG'?`เหลือ ${wDeck.length} คำ`:level==='DONE'?`ทบทวนคำที่ ${wi+1} / ${wDeck.length}`:`เขียนแล้ว ${ns} / ${pp.length} คำ`;$('wReset').hidden=true;
   $('wScore').textContent=`ถูก ${wOk} · ผิด ${wBad}`;
 }
 function setW(dis){['wPlay','wWord','wHintPos','wHintSent','wHintMean','wHintRead','reveal','wSkip'].forEach(id=>$(id).disabled=dis)}
@@ -549,11 +549,15 @@ $('wHintSent').onclick=()=>{const x=wCur();hint(`<span class="sent">${maskSent(x
 $('wHintMean').onclick=()=>{const x=wCur();hint(`<b>ความหมาย:</b> ${esc(x.mean)}`)};
 $('wHintRead').onclick=()=>{const x=wCur();hint(`<b>คำอ่าน:</b> <span class="read">${esc(x.read)}</span>`)};
 $('reveal').onclick=()=>{const x=wCur();if(!x)return;$('aWord').textContent=x.w;$('aLetters').innerHTML=letters(x.w);$('aRead').textContent=x.read;$('aPos').textContent=x.pos;$('aMean').textContent=x.mean;$('aTip').hidden=!x.tip;$('aTip').textContent=x.tip;$('wAns').hidden=false;$('wAns').scrollIntoView({block:'nearest',behavior:'smooth'})};
-function wNext(){wi++;if(wi>=wDeck.length){wDeck=roundLv()?shuffle(roundPool()):buildDeck(pool());wi=0}wLoad()}
-function roundWrote(w){const r=getRound();if(!r)return;if(!r.wd.includes(w))r.wd.push(w);if(r.words.every(x=>r.wd.includes(x)))r.st.write=1;saveRound()}
+const fixMode=()=>{const r=getRound();return !!(r&&r.st.test)};
+function writeDeck(){const r=getRound();if(!r)return level==='WRONG'||level==='DONE'?shuffle(pool()):buildDeck(pool());
+  if(r.st.test){const m=new Map(pool().map(x=>[x.w,x]));return shuffle((r.fix||[]).filter(w=>!r.wd.includes(w)).map(w=>m.get(w)).filter(Boolean))}
+  return shuffle(roundPool())}
+function wNext(){wi++;if(wi>=wDeck.length){wDeck=writeDeck();wi=0}wLoad()}
+function roundFixed(w){const r=getRound();if(!r||!r.st.test)return;if(!r.wd.includes(w))r.wd.push(w);if((r.fix||[]).every(x=>r.wd.includes(x)))r.st.write=1;saveRound()}
 $('wReset').onclick=()=>{pool().forEach(x=>seen.delete(x.w));store.set('seen',[...seen]);wDeck=buildDeck(pool());wi=0;wLoad()};
-$('markOk').onclick=()=>{const x=wCur();wOk++;tally(1);bump();markSeen(x.w);roundWrote(x.w);if(level==='WRONG'||wrong.has(x.w)){wrong.delete(x.w);saveWrong();if(level==='WRONG'){wDeck.splice(wi,1);wi--}}wNext()};
-$('markBad').onclick=()=>{const x=wCur();wBad++;tally(0);bump();markSeen(x.w);roundWrote(x.w);wrong.add(x.w);saveWrong();wNext()};
+$('markOk').onclick=()=>{const x=wCur();wOk++;tally(1);bump();markSeen(x.w);const fm=fixMode();roundFixed(x.w);if(level==='WRONG'||wrong.has(x.w)){wrong.delete(x.w);saveWrong()}if(level==='WRONG'||fm){wDeck.splice(wi,1);wi--}wNext()};
+$('markBad').onclick=()=>{const x=wCur();wBad++;tally(0);bump();markSeen(x.w);wrong.add(x.w);saveWrong();wNext()};
 $('wSkip').onclick=wNext;
 
 /* ---------- rounds: 20 words at a time (learn -> write -> test) ---------- */
@@ -568,11 +572,11 @@ function roundPool(){const r=getRound();if(!r)return pool();const m=new Map(pool
 function saveRound(){store.set('rounds',rounds);renderRound()}
 function markStep(s){const r=getRound();if(!r||r.st[s])return;r.st[s]=1;saveRound()}
 function renderRound(){const r=getRound(),bar=$('roundBar');if(!r){bar.hidden=true;return}bar.hidden=false;
-  const steps=[['learn','① ท่องจำ'],['write',`② ฝึกเขียน ${Math.min(r.wd.length,r.words.length)}/${r.words.length}`],['test','③ สอบ']];const nx=steps.find(([k])=>!r.st[k]);
+  const fx=r.fix||[],steps=[['learn','① ท่องจำ'],['test','② สอบ'],['write',r.st.test?`③ ฝึกคำที่ผิด ${fx.filter(w=>r.wd.includes(w)).length}/${fx.length}`:'③ ฝึกคำที่ผิด']];const nx=steps.find(([k])=>!r.st[k]);
   const pp=pool(),nd=pp.filter(x=>seen.has(x.w)).length;
-  bar.innerHTML=`<span class="rn">รอบที่ ${r.n}</span>`+steps.map(([k,l],i)=>`${i?'<span class="arr">→</span>':''}<button class="rs${r.st[k]?' done':nx&&nx[0]===k?' next':''}" data-go="${k}">${l}${r.st[k]?' ✓':''}</button>`).join('')+
+  bar.innerHTML=`<span class="rn">รอบที่ ${r.n}</span>`+steps.map(([k,l],i)=>`${i?'<span class="arr">→</span>':''}<button class="rs${r.st[k]?' done':nx&&nx[0]===k?' next':''}" data-go="${k}">${l}${r.st[k]?' ✓':''}</button>`).join('')+(r.st.test&&r.st.write?`<button class="rs next" data-next="1">▶ เริ่มรอบที่ ${r.n+1}</button>`:'')+
     `<span class="hist">${r.hist.length?'ผลแต่ละรอบ: '+r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.s}</b>`).join(' · ')+' · ':''}ทั้งชุดฝึกแล้ว ${nd} / ${pp.length} คำ</span>`}
-$('roundBar').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go)});
+$('roundBar').addEventListener('click',e=>{if(e.target.closest('[data-next]')){startNextRound();return}const b=e.target.closest('[data-go]');if(b)show(b.dataset.go)});
 function startNextRound(){const r=getRound();if(!r)return;newRound(r);resetAll();show('learn')}
 
 /* ---------- learn mode ---------- */
@@ -599,7 +603,7 @@ $('tSubmit').onclick=()=>{tAns.push(snap());tMark.push(tAns[ti]?null:0);ti++;if(
 function tSummary(){const marked=tMark.filter(m=>m!==null).length,ok=tMark.filter(m=>m===1).length,s=(Date.now()-tStartT)/1000|0;
   $('tSum').innerHTML=tSaved?`<div class="score">${Math.round(ok/tDeck.length*100)} / 100</div><div>ถูก <b>${ok}</b> จาก ${tDeck.length} คำ · ใช้เวลา ${esc($('tTime').textContent.replace('⏱ ',''))} นาที</div><div class="counter" style="flex-basis:100%">คำที่ผิดถูกเพิ่มเข้า 🔁 คำที่ต้องทบทวน แล้ว</div>`
     :`<div><b>ตรวจคำตอบ</b> เทียบลายมือกับเฉลย แล้วกด ✓ หรือ ✗ ทุกข้อ</div><div class="counter">ตรวจแล้ว ${marked} / ${tDeck.length} ข้อ · ถูก ${ok}</div>`;
-  $('tSave').disabled=marked<tDeck.length;$('tSave').hidden=tSaved;$('tAgain').hidden=!tSaved;$('tAgain').textContent=getRound()?`▶ เริ่มรอบที่ ${getRound().n+1} (คำใหม่ 20 คำ)`:'🔄 สอบอีกชุด'}
+  $('tSave').disabled=marked<tDeck.length;$('tSave').hidden=tSaved;$('tAgain').hidden=!tSaved;const gr=getRound();$('tAgain').textContent=!gr?'🔄 สอบอีกชุด':(gr.st.test&&(gr.fix||[]).length&&!gr.st.write)?`③ ไปฝึกเขียนคำที่ผิด (${gr.fix.length} คำ) →`:`▶ เริ่มรอบที่ ${gr.n+1} (คำใหม่ 20 คำ)`}
 function tFinish(){clearInterval(tTimer);stopSpeak();placePad('write');$('tRun').hidden=true;$('tDone').hidden=false;
   $('tRes').innerHTML=tDeck.map((x,i)=>`<div class="ti${tMark[i]===1?' y':tMark[i]===0?' n':''}" data-i="${i}"><span class="no">${i+1}</span><div>
     ${tAns[i]?`<img class="hw" src="${tAns[i]}" alt="ลายมือข้อ ${i+1}">`:'<div class="hwe">(ไม่ได้เขียน)</div>'}
@@ -612,9 +616,9 @@ $('tRes').addEventListener('click',e=>{const s=e.target.closest('[data-w]');if(s
 $('tSave').onclick=()=>{if(tSaved||tMark.some(m=>m===null))return;tSaved=true;let ok=0;
   tDeck.forEach((x,i)=>{if(tMark[i]===1){ok++;wrong.delete(x.w)}else wrong.add(x.w);markSeen(x.w)});
   saveWrong();bump(tDeck.length);const rr=getRound(),sc=Math.round(ok/tDeck.length*100);store.set('tests',store.get('tests',[]).concat([{d:Date.now(),s:sc,lv:level,r:rr?rr.n:null,bad:tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w)}]).slice(-30));
-  if(rr){rr.hist=rr.hist.concat([{n:rr.n,s:sc,d:Date.now()}]).slice(-50);rr.st.test=1;saveRound()}
+  if(rr){rr.hist=rr.hist.concat([{n:rr.n,s:sc,d:Date.now()}]).slice(-50);rr.st.test=1;rr.fix=tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w);rr.wd=[];rr.st.write=rr.fix.length?0:1;saveRound();wDeck=writeDeck();wi=0;wOk=0;wBad=0;wLoad()}
   $('tRes').querySelectorAll('.mk .btn').forEach(b=>b.disabled=true);tSummary();window.scrollTo(0,0)};
-$('tAgain').onclick=()=>{if(getRound())startNextRound();else{$('tDone').hidden=true;$('tStart').hidden=false}};
+$('tAgain').onclick=()=>{const gr=getRound();if(!gr){$('tDone').hidden=true;$('tStart').hidden=false;return}if(gr.st.test&&(gr.fix||[]).length&&!gr.st.write){show('write');return}startNextRound()};
 
 /* ---------- list ---------- */
 let shown=200;
@@ -630,7 +634,7 @@ $('more').onclick=()=>{shown+=200;renderList()};
 $('lf').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;lf=b.dataset.f;$('lf').querySelectorAll('[data-f]').forEach(c=>c.setAttribute('aria-pressed',c===b));shown=200;renderList()});
 $('tbody').addEventListener('click',e=>{const b=e.target.closest('.say');if(b){const x=W[+b.dataset.i];speak([cW(x)])}});
 
-function resetAll(){const p=pool(),rp=roundPool(),rr=getRound();$('stTotal').textContent=p.length;wDeck=shuffle(rp.slice());wi=0;wOk=0;wBad=0;wLoad();lBase=lDeck=rp.slice();li=rr?0:Math.min(lpos[level]||0,Math.max(0,p.length-1));lLoad();renderRound();
+function resetAll(){const p=pool(),rp=roundPool(),rr=getRound();$('stTotal').textContent=p.length;wDeck=writeDeck();wi=0;wOk=0;wBad=0;wLoad();lBase=lDeck=rp.slice();li=rr?0:Math.min(lpos[level]||0,Math.max(0,p.length-1));lLoad();renderRound();
   clearInterval(tTimer);$('tRun').hidden=true;$('tDone').hidden=true;$('tStart').hidden=false;placePad('write');if(!$('v-list').hidden)renderList()}
 
 /* ---------- dialogs ---------- */
