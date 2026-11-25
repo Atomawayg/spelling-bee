@@ -36,7 +36,7 @@ export default async (req: Request) => {
   const store = getStore("tts-samples");
   const key = encodeURIComponent(`${v}|${r}|${t}`);
   const cached = await store.get(key, { type: "arrayBuffer" });
-  const headers = { "content-type": "audio/mpeg", "cache-control": "public, max-age=86400" };
+  const headers = { "content-type": "audio/mpeg", "cache-control": "public, max-age=86400", "netlify-vary": "query" };
   if (cached) return new Response(cached, { headers });
   try {
     const buf = await synth(t, v, r);
