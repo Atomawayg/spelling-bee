@@ -1,0 +1,27 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>เลือกเสียงอ่าน</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600&display=swap">
+<style>
+:root{--paper:#fbfaf6;--sheet:#fff;--ink:#1d2541;--muted:#5d6480;--amber:#c98a06;--line:#e4e2da}
+@media (prefers-color-scheme:dark){:root{--paper:#14182a;--sheet:#1c2137;--ink:#eceef7;--muted:#a3a9c4;--amber:#f2b632;--line:#2c3250;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 "IBM Plex Sans Thai",system-ui,sans-serif;padding:16px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}h1{margin:0;font-size:24px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{margin:0 0 4px;font-size:20px}.muted{color:var(--muted);font-size:14px;margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+button{appearance:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);font:600 15px inherit;font-family:inherit;min-height:46px;padding:8px 14px;border-radius:12px;cursor:pointer}
+button.playing{background:var(--amber);border-color:var(--amber);color:#1d1400}
+select{font:16px inherit;font-family:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);min-height:44px}
+</style></head><body><div class="wrap">
+<h1>🎧 เลือกเสียงอ่าน</h1>
+<p class="muted" style="margin:0">กดฟังแต่ละเสียง แล้วบอกครูว่าชอบ A, B, C หรือ D (ครั้งแรกที่กดอาจรอ 1–2 วินาที)</p>
+<label class="muted">ความเร็ว: <select id="rate"><option value="-20%">ช้าลง 20%</option><option value="-15%" selected>ช้าลง 15%</option><option value="-10%">ช้าลง 10%</option><option value="+0%">ปกติ</option></select></label>
+<div id="list"></div></div>
+<script>
+const V=[["A","en-US-JennyNeural","ผู้หญิง สำเนียงอเมริกัน"],["B","en-US-AvaNeural","ผู้หญิง สำเนียงอเมริกัน (เสียงนุ่ม)"],["C","en-US-AndrewNeural","ผู้ชาย สำเนียงอเมริกัน"],["D","en-GB-SoniaNeural","ผู้หญิง สำเนียงอังกฤษ"]];
+const T=["February.","eighth.","accommodation.","fluorescent.","August is the eighth month."];
+const a=new Audio();let cur=null;
+document.getElementById('list').innerHTML=V.map(([k,v,d])=>`<div class="card" style="margin-bottom:12px"><h2>เสียง ${k}</h2><p class="muted">${d}</p><div class="row">${T.map(t=>`<button data-v="${v}" data-t="${t}">🔊 ${t.replace(/\.$/,'')}</button>`).join('')}</div></div>`).join('');
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-v]');if(!b)return;if(cur)cur.classList.remove('playing');cur=b;b.classList.add('playing');
+ a.src='/api/tts-sample?v='+b.dataset.v+'&r='+encodeURIComponent(document.getElementById('rate').value)+'&t='+encodeURIComponent(b.dataset.t);a.play().catch(()=>{});a.onended=()=>b.classList.remove('playing')});
+</script></body></html>
