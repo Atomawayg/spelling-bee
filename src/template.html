@@ -1,0 +1,761 @@
+<title>Spelling Bee ม.ต้น</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Exercise-book page: ① listen → ② write → ③ check, with a thumb-reach tab bar at the bottom */
+:root{
+  --paper:#fbfaf6; --sheet:#ffffff; --ink:#1d2541; --muted:#5d6480; --rule:#c9d6ee; --margin:#d8504a;
+  --amber:#c98a06; --amber-soft:#fff3d1; --line:#e4e2da; --ok:#2e7d4f; --ok-soft:#e3f3e8; --bad:#b83a34; --bad-soft:#fbe6e4;
+  --chip:#f0eee6; --shadow:0 1px 2px rgba(29,37,65,.06),0 4px 14px rgba(29,37,65,.06);
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",ui-sans-serif,system-ui,sans-serif;
+  --f-word:"Andika","Comic Sans MS",ui-rounded,system-ui,sans-serif;
+  --nav-h:64px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#14182a; --sheet:#1c2137; --ink:#eceef7; --muted:#a3a9c4; --rule:#34406a; --margin:#e0716b;
+  --amber:#f2b632; --amber-soft:#3a3016; --line:#2c3250; --ok:#6fcf97; --ok-soft:#173326; --bad:#f08a84; --bad-soft:#3d1c1c; --chip:#262c47; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#14182a; --sheet:#1c2137; --ink:#eceef7; --muted:#a3a9c4; --rule:#34406a; --margin:#e0716b;
+  --amber:#f2b632; --amber-soft:#3a3016; --line:#2c3250; --ok:#6fcf97; --ok-soft:#173326; --bad:#f08a84; --bad-soft:#3d1c1c; --chip:#262c47; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:14px;padding-bottom:calc(var(--nav-h) + 24px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;gap:10px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(22px,4.4vw,32px);line-height:1.05;margin:0;letter-spacing:-.01em}
+h1 .bee{color:var(--amber)}
+.stats{display:flex;gap:16px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto;text-align:center}
+.stats>div{white-space:nowrap}
+.stats b{color:var(--ink);font-size:18px;display:block;font-family:var(--f-display);line-height:1.1}
+.iconbtn{appearance:none;border:1px solid var(--line);background:var(--sheet);color:var(--ink);font:600 13px var(--f-body);min-width:48px;height:48px;border-radius:14px;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:2px 8px;line-height:1.1}
+.iconbtn .i{font-size:18px}
+.status{font-size:13px;color:var(--muted)}
+.status.ok{color:var(--ok)}
+/* level picker */
+.levels{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.levels::-webkit-scrollbar{display:none}
+.levels .lab{font-size:13.5px;color:var(--muted);white-space:nowrap}
+.filters{display:flex;gap:8px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:500 14.5px var(--f-body);min-height:44px;padding:6px 14px;border-radius:999px;cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip small{opacity:.7}
+/* bottom tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;background:var(--sheet);border-top:1px solid var(--line);
+  padding:0 max(8px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(8px,env(safe-area-inset-left,0px))}
+.tab{appearance:none;border:0;background:none;color:var(--muted);font:600 13.5px var(--f-body);height:var(--nav-h);flex:1;max-width:200px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.tab .i{font-size:22px;line-height:1}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--amber)}
+/* buttons */
+input[type=search],input[type=text]{font:16px var(--f-body);color:var(--ink);background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:46px}
+button.btn{appearance:none;border:1px solid var(--line);background:var(--sheet);color:var(--ink);font:600 15px var(--f-body);min-height:46px;padding:8px 16px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;line-height:1.25}
+button.btn:hover{border-color:var(--muted)}
+button.primary{background:var(--amber);border-color:var(--amber);color:#1d1400}
+button.big{min-height:58px;font-size:17px;padding:10px 20px;border-radius:14px}
+button.ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+button.bad{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+button.soft{background:var(--chip)}
+button:focus-visible,.chip:focus-visible,.tab:focus-visible,input:focus-visible,.iconbtn:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grow>*{flex:1 1 0}
+.spacer{flex:1}
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:18px;padding:18px;position:relative;box-shadow:var(--shadow)}
+.lvl{font:600 12px var(--f-body);letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px;background:var(--amber-soft);color:var(--ink)}
+.counter{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* steps */
+.step{display:flex;flex-direction:column;gap:10px}
+.step h3{margin:0;font:600 16px var(--f-body);display:flex;align-items:center;gap:10px}
+.num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--paper);font:800 15px var(--f-display);flex:none}
+.step h3 small{font-weight:400;color:var(--muted);font-size:13.5px}
+.helpers{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.helpers .btn{font-size:14px;padding:6px 8px;flex-direction:column;gap:2px;min-height:60px}
+.helpers .btn .i{font-size:19px}
+.helplab{font-size:13.5px;color:var(--muted);margin:2px 0 -4px}
+.wgrid{display:grid;gap:16px;grid-template-columns:1fr;grid-template-areas:"top" "s1" "s2" "s3"}
+.wtop{grid-area:top}.s1{grid-area:s1}.s2{grid-area:s2}.s3{grid-area:s3}
+@media (min-width:900px){
+  .wgrid{grid-template-columns:minmax(300px,380px) 1fr;grid-template-areas:"top top" "s1 s2" "s3 s2";align-items:start}
+  .s2{position:sticky;top:12px}
+}
+.word{font-family:var(--f-word);font-weight:700;font-size:clamp(38px,9vw,64px);line-height:1.1;margin:10px 0 4px;word-break:break-word}
+.pos{font-style:italic;color:var(--muted)}
+.read{font-size:19px;color:var(--amber);font-weight:600}
+.mean{font-size:20px;font-weight:500}
+.sent{font-family:var(--f-word);font-size:18px;margin:8px 0 0}
+.sent mark{background:var(--amber-soft);color:inherit;padding:0 2px;border-radius:3px}
+.tip{font-size:14.5px;color:var(--muted);border-left:3px solid var(--margin);padding-left:10px;margin-top:10px}
+.meta{display:grid;gap:6px}
+.letters{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.letters span{font:700 20px var(--f-word);width:34px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+/* writing sheet */
+.pad{position:relative;width:100%;height:300px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--sheet);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+@media (min-width:900px){.pad{height:clamp(300px,52vh,460px)}}
+.pad canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.padtools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.swatch{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.swatch[aria-pressed="true"]{outline:3px solid var(--amber);outline-offset:2px}
+.sizebox{display:flex;align-items:center;gap:6px}
+.sizebox input{width:110px}
+.hint{background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:15.5px}
+.answer{border-radius:14px;padding:14px;background:var(--amber-soft)}
+.answer .word{font-size:clamp(34px,7vw,52px)}
+.score{font-family:var(--f-display);font-size:44px;font-weight:800;font-variant-numeric:tabular-nums}
+.res{display:grid;gap:6px}
+.res div{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;padding:8px 10px;border-radius:8px}
+.res .y{background:var(--ok-soft)} .res .n{background:var(--bad-soft)}
+.res s{color:var(--bad)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px;letter-spacing:.04em;position:sticky;top:0;background:var(--sheet)}
+td .rd{display:none}
+.roundbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:var(--shadow)}
+.roundbar .rn{font:800 18px var(--f-display);margin-right:4px}
+.roundbar .rs{appearance:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:600 14.5px var(--f-body);min-height:42px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.roundbar .rs.done{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.roundbar .rs.next{background:var(--amber);border-color:var(--amber);color:#1d1400}
+.roundbar .arr{color:var(--muted)}
+.roundbar .hist{flex-basis:100%;font-size:13.5px;color:var(--muted)}
+@media (max-width:560px){.roundbar .rs{font-size:13.5px;padding:4px 10px;min-height:40px}.roundbar .arr{display:none}}
+.tsum{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline;background:var(--amber-soft);border-radius:14px;padding:14px}
+.tsum .score{font-size:40px}
+.tres{display:grid;gap:10px}
+.tres .ti{display:grid;grid-template-columns:28px 1fr;gap:8px 10px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--sheet)}
+.tres .ti.y{background:var(--ok-soft);border-color:var(--ok)}.tres .ti.n{background:var(--bad-soft);border-color:var(--bad)}
+.ti .no{font:800 18px var(--f-display)}
+.ti .hw{width:100%;max-width:520px;aspect-ratio:auto;border:1px dashed var(--line);border-radius:10px;background:var(--paper);display:block}
+.ti .hwe{padding:14px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
+.ti .key{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-top:6px}
+.ti .key b{font:700 24px var(--f-word)}
+.ti .mk{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;max-width:520px}.ti .mk .btn{min-height:46px;white-space:nowrap;width:100%}.ti>div{min-width:0;width:100%}
+#tPadSlot .pad{height:clamp(200px,38vh,340px)}
+.ti .mk .btn[aria-pressed="true"].ok{background:var(--ok);color:#fff}.ti .mk .btn[aria-pressed="true"].bad{background:var(--bad);color:#fff}
+td.st{width:34px;text-align:center;font-weight:700}.st-done{color:var(--ok)}.st-wrong{color:var(--bad)}
+td.w{font:700 16px var(--f-word);white-space:nowrap}
+.say{appearance:none;border:1px solid var(--line);background:var(--chip);border-radius:10px;cursor:pointer;font-size:16px;width:36px;height:36px;margin-right:6px;color:var(--ink);vertical-align:middle}
+.notice{font-size:13.5px;color:var(--bad);margin:0}
+.big-input{font:700 28px var(--f-word)!important;width:100%;text-align:center;letter-spacing:.04em}
+.empty{color:var(--muted);text-align:center;padding:30px}
+/* dialogs */
+dialog{border:1px solid var(--line);border-radius:20px;background:var(--sheet);color:var(--ink);padding:20px;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(10,14,30,.45)}
+dialog h2{font:800 22px var(--f-display);margin:0 0 12px}
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field>label{font-weight:600;font-size:14.5px}
+.field select{font:15px var(--f-body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:46px;width:100%}
+.field input[type=range]{width:100%}
+.guide{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:12px}
+.guide li{display:flex;gap:12px;align-items:flex-start}
+.guide .num{margin-top:2px}
+@media (max-width:560px){
+  .panel{padding:14px;border-radius:16px}
+  .pad{height:220px}
+  .stats{gap:10px;font-size:11.5px}.stats .opt{display:none}
+  h1{font-size:21px}
+  .iconbtn{font-size:0;min-width:44px;height:44px;padding:0}.iconbtn .i{font-size:20px}
+  header{gap:8px}
+  .helpers{grid-template-columns:repeat(2,1fr)}
+  .helpers .btn{flex-direction:row;min-height:46px}
+  .letters span{width:28px;height:34px;font-size:17px}
+  .sizebox input{width:80px}
+  header{flex-wrap:wrap}header h1{flex:1 1 100%;white-space:nowrap}.stats{margin-left:0;margin-right:auto}
+  #qCount{flex:1 1 100%}
+  table th:nth-child(3),table td:nth-child(3),table th:nth-child(4),table td:nth-child(4),table th:nth-child(6),table td:nth-child(6){display:none}
+  td.w{white-space:normal}td .rd{display:block;font:400 13px var(--f-body);color:var(--muted);margin:2px 0 0 42px}
+  #lf .chip{min-height:40px;padding:4px 12px;font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+
+.stepper{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--sheet);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:14px;box-shadow:var(--shadow)}
+.stepper .rn{font:800 18px var(--f-display);margin-right:4px}
+.stepper .rs{appearance:none;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:600 14.5px var(--f-body);min-height:42px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.stepper .rs.done{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.stepper .rs.cur{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.stepper .rs:disabled{opacity:.45;cursor:default}.stepper .rs.done:disabled{opacity:1}
+.stepper .arr{color:var(--muted);font-weight:700}
+.stepper .hist{flex-basis:100%;font-size:13.5px;color:var(--muted)}
+.ph{font:800 24px var(--f-display);margin:0 0 6px}.pd{margin:0 0 14px;color:var(--muted)}
+.foot{margin-top:4px}.foot .status{font-size:12.5px}
+.st-learning{color:var(--amber)}.st-known{color:var(--ok)}
+.levels{flex-wrap:wrap}.filters{flex-wrap:wrap}
+.stats small{font-size:13px;color:var(--muted);font-weight:600}
+@media (max-width:560px){.stepper .rs{font-size:13.5px;padding:4px 10px;min-height:40px}.stepper .arr{display:none}.levels .lab{display:none}.filters .chip{min-height:38px;padding:4px 11px;font-size:13.5px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Spelling <span class="bee">Bee</span> ม.ต้น</h1>
+    <div class="stats">
+      <div><b><span id="stKnown">0</span><small>/<span id="stTotal">0</span></small></b>จำได้แล้ว</div>
+      <div><b id="stWrong">0</b>ต้องทบทวน</div>
+    </div>
+    <button class="iconbtn" id="userBtn" hidden aria-label="เปลี่ยนผู้ใช้"><span class="i">👤</span><span id="userName">ผู้ใช้</span></button>
+    <button class="iconbtn" id="helpBtn" aria-label="วิธีใช้"><span class="i">❓</span>วิธีใช้</button>
+    <button class="iconbtn" id="setBtn" aria-label="ตั้งค่าเสียง"><span class="i">⚙️</span>เสียง</button>
+  </header>
+
+  <div class="levels"><span class="lab">ชุดคำ:</span><div class="filters" id="filters" aria-label="เลือกชุดคำ"></div></div>
+  <p class="notice" id="ttsNote" hidden>อุปกรณ์นี้ไม่รองรับเสียงอ่าน ใช้คำอ่านภาษาไทยแทนได้ หรือให้ครูอ่านคำให้</p>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-home" aria-selected="true"><span class="i">🏠</span>ฝึกรอบนี้</button>
+    <button class="tab" role="tab" id="tab-list" aria-selected="false"><span class="i">📋</span>คำศัพท์</button>
+  </nav>
+
+  <div id="v-home">
+    <div class="stepper" id="stepper"></div>
+
+    <!-- STEP 1: LEARN -->
+    <section id="v-learn" class="panel" hidden>
+      <div class="row"><span class="lvl" id="lLvl"></span><span class="counter" id="lCount"></span></div>
+      <div class="word" id="lWord"></div>
+      <div class="meta">
+        <div><span class="read" id="lRead"></span> · <span class="pos" id="lPos"></span></div>
+        <div class="mean" id="lMean"></div>
+        <p class="sent" id="lSent"></p>
+        <div class="tip" id="lTip" hidden></div>
+      </div>
+      <div class="letters" id="lLetters"></div>
+      <div class="row grow" style="margin-top:18px"><button class="btn big" id="lSay">🔊 ฟังคำและประโยค</button></div>
+      <div class="row grow" style="margin-top:8px">
+        <button class="btn big" id="lPrev">← คำก่อนหน้า</button>
+        <button class="btn primary big" id="lNext">คำถัดไป →</button>
+      </div>
+    </section>
+
+    <!-- STEP 2: TEST -->
+    <section id="v-test" class="panel" hidden>
+      <div id="tStart">
+        <h2 class="ph">② สอบเขียน 20 คำ</h2>
+        <p class="pd">ระบบอ่านคำละ 2 ครั้ง พร้อมประโยค 2 ครั้ง ให้<b>เขียน</b>คำที่ได้ยินลงในช่อง คำละ 1 คะแนน สอบเสร็จแล้วดูเฉลยและตรวจทีละข้อ</p>
+        <button class="btn primary big" id="tGo">▶ เริ่มสอบ</button>
+      </div>
+      <div id="tRun" hidden>
+        <div class="row"><span class="counter" id="tCount"></span><span class="spacer"></span><span class="counter" id="tTime"></span></div>
+        <div class="row" style="margin:12px 0"><button class="btn primary" id="tPlay">🔊 ฟังอีกครั้ง</button><button class="btn" id="tPos">🏷️ ชนิดคำ</button><span class="hint" id="tHint" hidden></span></div>
+        <div id="tPadSlot"></div>
+        <div class="row grow" style="margin-top:12px"><button class="btn primary big" id="tSubmit">คำถัดไป →</button></div>
+      </div>
+      <div id="tDone" hidden>
+        <div class="tsum" id="tSum"></div>
+        <div class="tres" id="tRes" style="margin-top:12px"></div>
+        <div class="row grow" style="margin-top:14px"><button class="btn primary big" id="tSave" disabled>บันทึกคะแนน</button></div>
+        <div class="row grow" style="margin-top:8px"><button class="btn primary big" id="tAgain" hidden></button></div>
+      </div>
+    </section>
+
+    <!-- STEP 3: FIX (write the missed words) -->
+    <section id="v-write" class="panel" hidden>
+      <div class="wgrid">
+        <div class="row wtop"><span class="lvl" id="wLvl"></span><span class="counter" id="wCount"></span><span class="spacer"></span><span class="counter" id="wScore"></span></div>
+        <div class="step s1">
+          <h3><span class="num">1</span>ฟังคำ <small>ฟังแล้วเขียนให้ถูก</small></h3>
+          <button class="btn primary big" id="wPlay">🔊 ฟังคำ (อ่านแบบสนามแข่ง)</button>
+          <button class="btn" id="wWord">🔁 ฟังเฉพาะคำอีกครั้ง</button>
+          <p class="helplab">💡 ตัวช่วย (กดเมื่อไม่แน่ใจ)</p>
+          <div class="helpers">
+            <button class="btn soft" id="wHintPos"><span class="i">🏷️</span>ชนิดคำ</button>
+            <button class="btn soft" id="wHintSent"><span class="i">💬</span>ประโยคตัวอย่าง</button>
+            <button class="btn soft" id="wHintMean"><span class="i">🇹🇭</span>ความหมาย</button>
+            <button class="btn soft" id="wHintRead"><span class="i">🗣️</span>คำอ่านไทย</button>
+          </div>
+          <div class="hint" id="wHint" hidden></div>
+        </div>
+        <div class="step s2">
+          <h3><span class="num">2</span>เขียนคำ <small>เขียนด้วยปากกาหรือนิ้วในช่องนี้</small></h3>
+          <div id="wPadSlot"><div id="padBox">
+          <div class="pad" id="pad"><canvas id="guide"></canvas><canvas id="ink"></canvas></div>
+          <div class="padtools" style="margin-top:10px">
+            <button class="swatch" data-c="ink" aria-label="ปากกาสีเข้ม" aria-pressed="true"></button>
+            <button class="swatch" data-c="#2457c5" aria-label="ปากกาสีน้ำเงิน" style="background:#2457c5"></button>
+            <button class="swatch" data-c="#c0392b" aria-label="ปากกาสีแดง" style="background:#c0392b"></button>
+            <span class="sizebox"><label class="counter" for="penSize">ขนาดเส้น</label><input type="range" id="penSize" min="2" max="10" value="4"></span>
+            <span class="spacer"></span>
+            <button class="btn" id="undo">↶ ย้อนเส้น</button>
+            <button class="btn" id="clear">🧹 ลบทั้งหมด</button>
+          </div>
+          </div></div>
+        </div>
+        <div class="step s3">
+          <h3><span class="num">3</span>ตรวจคำตอบ <small>เขียนเสร็จแล้วกดดูเฉลย</small></h3>
+          <div class="row grow">
+            <button class="btn primary big" id="reveal">👀 ดูเฉลย</button>
+            <button class="btn big" id="wSkip">ข้ามไปก่อน →</button>
+          </div>
+          <div class="answer" id="wAns" hidden>
+            <div class="word" id="aWord" style="margin-top:0"></div>
+            <div class="letters" id="aLetters"></div>
+            <div class="meta" style="margin-top:10px"><div><span class="read" id="aRead"></span> · <span class="pos" id="aPos"></span> · <span class="mean" id="aMean"></span></div><div class="tip" id="aTip" hidden></div></div>
+            <p style="margin:14px 0 8px;font-weight:600">เทียบกับที่เขียน แล้วเลือก:</p>
+            <div class="row grow">
+              <button class="btn ok big" id="markOk">✓ เขียนถูก</button>
+              <button class="btn bad big" id="markBad">✗ ยังผิด (ฝึกอีก)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROUND DONE -->
+    <section id="v-done" class="panel" hidden>
+      <div id="doneBody"></div>
+      <div class="row grow" style="margin-top:16px"><button class="btn primary big" id="nextRound"></button></div>
+    </section>
+  </div>
+
+  <!-- WORD LIST -->
+  <section id="v-list" hidden>
+    <div class="row" id="lf" style="margin-bottom:10px"></div>
+    <div class="row" style="margin-bottom:10px"><input type="search" id="q" placeholder="🔎 ค้นหาคำศัพท์หรือคำแปล" style="flex:1;min-width:0"><span class="counter" id="qCount"></span></div>
+    <div class="tbl"><table><thead><tr><th title="สถานะ">สถานะ</th><th>คำศัพท์ (กด 🔊 เพื่อฟัง)</th><th>คำอ่าน</th><th>ชนิด</th><th>คำแปล</th><th>ชุด</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="more" hidden>แสดงเพิ่ม</button></div>
+  </section>
+  <div class="row foot"><span class="status" id="audStat"></span><span class="spacer"></span><span class="status" id="syncStat"></span></div>
+</div>
+
+<dialog id="setDlg">
+  <h2>⚙️ ตั้งค่าเสียง</h2>
+  <div class="field"><label for="voiceSel">เสียงอ่าน</label><select id="voiceSel"></select></div>
+  <div class="field"><label for="rate">ความเร็ว <span class="counter" id="rateVal">100%</span></label><input type="range" id="rate" min="0.5" max="1.1" step="0.05" value="0.75"></div>
+  <p class="counter" style="margin:-6px 0 14px">แนะนำ 100% เสียงจะชัดที่สุด</p>
+  <div class="row grow"><button class="btn" id="voiceTest">🔊 ทดสอบเสียง</button><button class="btn primary" data-close>เสร็จ</button></div>
+</dialog>
+
+<dialog id="helpDlg">
+  <h2>วิธีใช้</h2>
+  <ol class="guide">
+    <li><span class="num">1</span><div><b>เลือกชุดคำ</b> ด้านบน เช่น 🏆 คำแข่ง แอปจะแบ่งให้ฝึก<b>รอบละ 20 คำ</b></div></li>
+    <li><span class="num">2</span><div>ทำตามขั้นในหน้า <b>🏠 ฝึกรอบนี้</b>: ① ท่องจำ → ② สอบเขียน แล้วตรวจกับเฉลย → ③ ฝึกเขียนคำที่ผิดจนถูก จบแล้วกดเริ่มรอบใหม่</div></li>
+    <li><span class="num">3</span><div>คำที่เคยผิดจะกลับมาสอบอีกในรอบหลังๆ เขียนถูก 2 ครั้งถึงนับว่า <b>จำได้แล้ว ✓</b> ดูสถานะทุกคำได้ที่ <b>📋 คำศัพท์</b></div></li>
+  </ol>
+  <p class="counter" style="margin:0 0 14px">เขียนด้วย Apple Pencil หรือนิ้วก็ได้ · ปรับเสียงหรือความเร็วที่ปุ่ม ⚙️ เสียง</p>
+  <div class="row grow"><button class="btn primary big" data-close>เริ่มฝึกเลย</button></div>
+  <p id="teacherLink" hidden style="margin:12px 0 0;text-align:center"><a href="teacher.html" class="counter">👩‍🏫 สำหรับครู: ดูผลการฝึกของนักเรียน</a></p>
+</dialog>
+
+<script type="application/json" id="data">__DATA__</script>
+<script type="application/json" id="audio">__AUDIO__</script>
+<script>
+window.__sbStart=()=>{
+const RAW=JSON.parse(document.getElementById('data').textContent);
+const W=RAW.map(([w,pos,read,mean,s,lv],i)=>{
+  let tip='',sent=s;
+  if(/^Remember/.test(s)){const i=s.indexOf('. ');if(i>0&&i<s.length-2){tip=s.slice(0,i+1);sent=s.slice(i+2)}else{tip=s;sent=''}}
+  return{i,w,pos,read,mean,sent,tip,lv};
+});
+const LV={K:'🏆 คำแข่ง',B1:'พื้นฐาน B1',B2:'กลาง B2',C1:'ท้าทาย C1',X:'คำสะกดยาก',ALL:'ทั้งหมด'};
+const LEVELS=['K','B1','B2','C1','X','ALL'];
+const store=window.SBStore||{get(k,d){try{const v=localStorage.getItem('sb_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('sb_'+k,JSON.stringify(v))}catch(e){}}};
+const $=id=>document.getElementById(id);
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* Word memory.
+   new      – never tested
+   wrong    – missed; needs practice
+   learning – written correctly once after a miss; comes back for a re-check a couple of rounds later
+   known    – correct (first time, or twice after a miss) */
+let wrong=new Set(store.get('wrong',[]));
+let seen=new Set(store.get('seen',[]));
+let learning=store.get('learning',{});   // word -> round count at which it is due again
+let rc=store.get('rc',0);                // rounds finished across all sets
+let level=store.get('level','K');if(!LEVELS.includes(level))level='K';
+const stateOf=w=>wrong.has(w)?'wrong':learning[w]!=null?'learning':seen.has(w)?'known':'new';
+function pool(){return level==='ALL'?W:W.filter(x=>x.lv===level)}
+function saveMem(){store.set('wrong',[...wrong]);store.set('seen',[...seen]);store.set('learning',learning);store.set('rc',rc);renderHead()}
+function tally(ok){const s=store.get('tot',{ok:0,bad:0});s[ok?'ok':'bad']++;store.set('tot',s)}
+function renderHead(){const p=pool();$('stKnown').textContent=p.filter(x=>stateOf(x.w)==='known').length;$('stTotal').textContent=p.length;$('stWrong').textContent=p.filter(x=>wrong.has(x.w)).length}
+
+/* ---------- speech ----------
+   Preferred: recorded clips shipped with the app (same clear voice on every device).
+   Fallback: the device's own speech engine. */
+const AUD=JSON.parse(document.getElementById('audio').textContent);
+const synth=window.speechSynthesis;let voice=null,voices=[];
+let baseRate=+store.get('rate',0.75);
+let useApp=store.get('voice3','__app')==='__app'&&AUD.f.length>0;
+const PREF=[/^Google US English/i,/^Google UK English Female/i,/^Google UK English Male/i,/Samantha/i,/\bAva\b/i,/Allison/i,/Susan/i,/\bZoe\b/i,/Nicky/i,/\bTom\b/i,/Daniel/i,/Karen/i,/Moira/i,/Tessa/i,/Serena/i,/Microsoft (Aria|Jenny|Guy).*Online/i,/Microsoft (Zira|David|Mark)/i];
+const NOVELTY=/^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Organ|Pipe Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Princess|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b/i;
+function rank(v){const i=PREF.findIndex(r=>r.test(v.name));return(i<0?50:i)+(/^en[-_](US|GB)/i.test(v.lang)?0:20)+(/enhanced|premium|natural/i.test(v.name)?-3:0)}
+function loadVoices(){
+  voices=synth?synth.getVoices().filter(v=>/^en/i.test(v.lang)&&!NOVELTY.test(v.name)).sort((a,b)=>rank(a)-rank(b)):[];
+  const saved=store.get('voice3','__app');
+  voice=(saved&&saved!=='__app')?(voices.find(v=>v.name===saved)||null):(voices[0]&&rank(voices[0])<20?voices[0]:null);
+  const sel=useApp?'__app':(voice?voice.name:'');
+  $('voiceSel').innerHTML=(AUD.f.length?`<option value="__app">🎧 Jenny (แนะนำ)</option>`:'')+(synth?`<option value="">เสียงมาตรฐานของเครื่อง</option>`+voices.map(v=>`<option value="${esc(v.name)}">${esc(v.name.replace(/^Microsoft /,''))} (${esc(v.lang)})</option>`).join(''):'');
+  $('voiceSel').value=sel;
+}
+loadVoices();if(synth){synth.onvoiceschanged=loadVoices;setTimeout(loadVoices,600)}
+$('voiceSel').onchange=e=>{const v=e.target.value;useApp=v==='__app';voice=useApp?null:(voices.find(x=>x.name===v)||null);store.set('voice3',useApp?'__app':(voice?voice.name:''));if(useApp)preload();else $('audStat').textContent=''};
+const showRate=()=>$('rateVal').textContent=Math.round(baseRate/.75*100)+'%';
+$('rate').value=baseRate;showRate();
+$('rate').oninput=e=>{baseRate=+e.target.value;showRate();store.set('rate',baseRate)};
+
+/* clip store: each audio file is several mp3 clips back to back; the index gives [file, offset, length] */
+const bufs={},urls={};
+function getFile(fi){return bufs[fi]||(bufs[fi]=fetch(AUD.f[fi]).then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer()}).catch(e=>{delete bufs[fi];throw e}))}
+function urlNow(name){return urls[name]||null}
+async function clipUrl(name){
+  if(urls[name])return urls[name];const ix=AUD.c[name];if(!ix)throw new Error('no clip');
+  const buf=await getFile(ix[0]);return urls[name]=URL.createObjectURL(new Blob([buf.slice(ix[1],ix[1]+ix[2])],{type:'audio/mpeg'}));
+}
+function filesFor(list){const s=new Set([AUD.common]);list.forEach(x=>{const a=AUD.c['w'+x.i],b=AUD.c['s'+x.i];if(a)s.add(a[0]);if(b)s.add(b[0])});return[...s]}
+let loadTok=0;
+function preload(){
+  if(!useApp)return;const tok=++loadTok;const fs=filesFor(pool().slice(0,400));let n=0;
+  const st=$('audStat');st.textContent='⏳ กำลังโหลดเสียง… รอสักครู่';st.className='status';
+  Promise.all(fs.map(fi=>getFile(fi).then(()=>{n++;if(tok===loadTok)st.textContent=`⏳ กำลังโหลดเสียง ${Math.round(n/fs.length*100)}%`})))
+    .then(()=>{if(tok===loadTok){st.textContent='✓ เสียงพร้อมแล้ว';st.className='status ok'}}).catch(()=>{if(tok===loadTok)st.textContent='⚠️ โหลดเสียงไม่สำเร็จ ใช้เสียงของเครื่องแทน'});
+}
+const player=new Audio();player.preload='auto';player.setAttribute('playsinline','');
+const SILENT='data:audio/mpeg;base64,__SILENT__';
+/* Clips play through Web Audio: each clip is its own decoded buffer, so nothing from the previous clip can leak in.
+   Slowed speech (rate below 100%) uses the media element with pitch preserved, flushed before every clip. */
+const AC=window.AudioContext||window.webkitAudioContext;let actx=null,curSrc=null;const decoded={};
+function ac(){if(!actx&&AC){try{actx=new AC()}catch(e){}}return actx}
+let unlocked=false;
+function unlock(){if(unlocked)return;unlocked=true;
+  const c=ac();if(c){try{if(c.state==='suspended')c.resume();const s=c.createBufferSource();s.buffer=c.createBuffer(1,1,22050);s.connect(c.destination);s.start(0)}catch(e){}}
+  try{player.src=SILENT;const p=player.play();if(p)p.catch(()=>{})}catch(e){}}
+document.addEventListener('pointerdown',unlock,{capture:true});
+document.addEventListener('keydown',unlock,{capture:true});
+async function clipBuf(name){
+  if(decoded[name])return decoded[name];const ix=AUD.c[name];if(!ix)throw new Error('no clip');
+  const buf=await getFile(ix[0]);const ab=buf.slice(ix[1],ix[1]+ix[2]);
+  return decoded[name]=await new Promise((res,rej)=>ac().decodeAudioData(ab,res,rej));
+}
+function stopClip(){if(curSrc){try{curSrc.onended=null;curSrc.stop()}catch(e){}curSrc=null}
+  try{player.onended=null;player.pause();player.removeAttribute('src');player.load()}catch(e){}}
+
+/* item = {c: clip name, t: text}; plays one at a time with a pause between */
+let speakToken=0;
+function speak(list,rateMul=1,gap=900){
+  const tok=++speakToken;if(synth)synth.cancel();stopClip();
+  list=list.map(x=>typeof x==='string'?{t:x}:x);let i=0;
+  const rate=Math.min(1.6,Math.max(.5,baseRate/.75*rateMul));
+  const next=()=>{
+    if(tok!==speakToken||i>=list.length)return;
+    const it=list[i++];let fired=false;const go=()=>{if(fired)return;fired=true;setTimeout(next,gap)};
+    const fallback=()=>{if(tok===speakToken&&!fired)sayTTS(it.t,rateMul,go)};
+    if(useApp&&it.c&&AUD.c[it.c]){
+      const c=ac();
+      if(c&&Math.abs(rate-1)<.01){
+        clipBuf(it.c).then(b=>{if(tok!==speakToken)return;
+          const run=()=>{if(tok!==speakToken)return;stopClip();const s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.onended=()=>{if(curSrc===s)curSrc=null;go()};curSrc=s;s.start(0)};
+          if(c.state==='suspended')c.resume().then(run,fallback);else run();
+        },fallback);
+      }else{
+        clipUrl(it.c).then(u=>{if(tok!==speakToken)return;stopClip();player.onended=go;player.onerror=fallback;player.src=u;
+          try{player.preservesPitch=true;player.webkitPreservesPitch=true}catch(e){}player.playbackRate=rate;player.defaultPlaybackRate=rate;
+          const p=player.play();if(p)p.catch(e=>{if(!e||e.name!=='AbortError')fallback()})},fallback);
+      }
+    }else sayTTS(it.t,rateMul,go);
+  };
+  next();
+}
+function sayTTS(t,rateMul,done){
+  if(!synth){$('ttsNote').hidden=false;done();return}
+  const u=new SpeechSynthesisUtterance(t);u.lang=voice?voice.lang:'en-US';if(voice)u.voice=voice;
+  u.rate=Math.max(.4,baseRate*rateMul);u.onend=done;u.onerror=done;synth.speak(u);
+}
+function stopSpeak(){speakToken++;if(synth)synth.cancel();stopClip()}
+const cW=x=>({c:'w'+x.i,t:x.w});
+const cS=x=>({c:'s'+x.i,t:sentFor(x)});
+const cP=x=>({c:'P_'+x.pos.toLowerCase().replace(/[^a-z]/g,''),t:'It is '+(/^[aeiou]/.test(posName(x.pos))?'an ':'a ')+posName(x.pos)+'.'});
+const cPh=x=>({c:'p'+x.i,t:'Your word is '+x.w+'.'});
+$('voiceTest').onclick=()=>speak([{c:'T_test',t:'accommodation. Remember to book your accommodation early.'}]);
+const sentFor=x=>x.sent||('The word is '+x.w+'.');
+const posName=p=>p.split('/').map(s=>({'n.':'noun','v.':'verb','adj.':'adjective','adv.':'adverb','prep.':'preposition','conj.':'conjunction','pron.':'pronoun','det.':'determiner','exclam.':'exclamation'}[s.trim()]||s)).join(' or ');
+function maskSent(x){const re=new RegExp(x.w.replace(/[-]/g,'\\-').slice(0,Math.max(4,x.w.length-2))+'\\w*','gi');return esc(sentFor(x)).replace(re,m=>'_'.repeat(Math.min(m.length,10)))}
+function hiSent(x){if(!x.sent)return'';const re=new RegExp('('+x.w.slice(0,Math.max(4,x.w.length-2)).replace(/[-]/g,'\\-')+'\\w*)','gi');return esc(x.sent).replace(re,'<mark>$1</mark>')}
+const letters=w=>[...w].map(c=>`<span>${esc(c)}</span>`).join('');
+
+/* ---------- pad ---------- */
+const pad=$('pad'),gc=$('guide'),ic=$('ink'),g=gc.getContext('2d'),c=ic.getContext('2d');
+let strokes=[],cur=null,color='ink',size=4;
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function sizePad(){
+  const r=pad.getBoundingClientRect();if(!r.width)return;const d=window.devicePixelRatio||1;
+  [gc,ic].forEach(cv=>{cv.width=r.width*d;cv.height=r.height*d});
+  g.setTransform(d,0,0,d,0,0);c.setTransform(d,0,0,d,0,0);
+  const H=r.height,rows=H>=240?2:1,band=H/rows;
+  g.clearRect(0,0,r.width,H);
+  g.strokeStyle=cssVar('--margin');g.lineWidth=1.5;g.beginPath();g.moveTo(34,0);g.lineTo(34,H);g.stroke();
+  for(let i=0;i<rows;i++){const top=i*band+band*.18,unit=band*.2;
+    [[0,cssVar('--rule'),[]],[1,cssVar('--rule'),[6,6]],[2,cssVar('--margin'),[]],[3,cssVar('--rule'),[]]].forEach(([k,col,dash])=>{
+      g.setLineDash(dash);g.strokeStyle=col;g.lineWidth=k===2?1.6:1;g.beginPath();g.moveTo(0,top+unit*k*1.15);g.lineTo(r.width,top+unit*k*1.15);g.stroke()});}
+  g.setLineDash([]);redraw();
+}
+let inkColor='';
+function redraw(){const r=pad.getBoundingClientRect();inkColor=cssVar('--ink');c.clearRect(0,0,r.width,r.height);strokes.forEach(drawStroke)}
+const mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+function styleFor(s){c.strokeStyle=s.c==='ink'?(inkColor||cssVar('--ink')):s.c;c.lineWidth=s.w;c.lineCap='round';c.lineJoin='round'}
+/* full stroke, smoothed with quadratic curves through midpoints */
+function drawStroke(s){styleFor(s);const p=s.p;c.beginPath();c.moveTo(p[0][0],p[0][1]);
+  if(p.length<3){c.lineTo(p[p.length-1][0]+.1,p[p.length-1][1])}
+  else{for(let i=1;i<p.length-1;i++){const m=mid(p[i],p[i+1]);c.quadraticCurveTo(p[i][0],p[i][1],m[0],m[1])}c.lineTo(p[p.length-1][0],p[p.length-1][1])}
+  c.stroke()}
+/* draw only the newest piece of the live stroke */
+function drawTail(s,from){styleFor(s);const p=s.p;
+  for(let i=Math.max(1,from);i<p.length;i++){c.beginPath();
+    if(i<2){c.moveTo(p[0][0],p[0][1]);c.lineTo(p[1][0],p[1][1])}
+    else{const a=mid(p[i-2],p[i-1]),b=mid(p[i-1],p[i]);c.moveTo(a[0],a[1]);c.quadraticCurveTo(p[i-1][0],p[i-1][1],b[0],b[1])}
+    c.stroke()}}
+let rect=null,penSeen=false,activeId=null;
+function pt(e){return[e.clientX-rect.left,e.clientY-rect.top]}
+function endStroke(e){if(e.pointerId!==activeId)return;if(cur&&cur.p.length>1){styleFor(cur);const p=cur.p,n=p.length;c.beginPath();c.moveTo(...mid(p[n-2],p[n-1]));c.lineTo(p[n-1][0],p[n-1][1]);c.stroke()}cur=null;activeId=null}
+ic.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='pen')penSeen=true;
+  if(penSeen&&e.pointerType==='touch')return;        /* palm rejection once a pencil is in use */
+  if(cur&&activeId!==null&&activeId!==e.pointerId)return; /* ignore a second finger mid-stroke */
+  e.preventDefault();try{ic.setPointerCapture(e.pointerId)}catch(_){}
+  rect=ic.getBoundingClientRect();if(!inkColor)inkColor=cssVar('--ink');activeId=e.pointerId;
+  const pr=e.pointerType==='pen'&&e.pressure?(.65+e.pressure*.7):1;
+  cur={c:color,w:size*pr,p:[pt(e)]};strokes.push(cur);
+  styleFor(cur);c.beginPath();c.arc(cur.p[0][0],cur.p[0][1],cur.w/2,0,Math.PI*2);c.fillStyle=c.strokeStyle;c.fill();
+},{passive:false});
+ic.addEventListener('pointermove',e=>{
+  if(!cur||e.pointerId!==activeId)return;e.preventDefault();
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];const from=cur.p.length;
+  (evs.length?evs:[e]).forEach(ev=>{const q=pt(ev),l=cur.p[cur.p.length-1];if(Math.abs(q[0]-l[0])+Math.abs(q[1]-l[1])>.6)cur.p.push(q)});
+  if(cur.p.length>from)drawTail(cur,from);
+},{passive:false});
+ic.addEventListener('pointerup',endStroke);ic.addEventListener('pointercancel',endStroke);
+['touchstart','touchmove','touchend'].forEach(t=>ic.addEventListener(t,e=>{if(e.cancelable)e.preventDefault()},{passive:false}));
+ic.addEventListener('contextmenu',e=>e.preventDefault());
+$('undo').onclick=()=>{strokes.pop();redraw()};
+$('clear').onclick=()=>{strokes=[];redraw()};
+$('penSize').oninput=e=>size=+e.target.value;
+document.querySelectorAll('.swatch').forEach(b=>{if(b.dataset.c==='ink')b.style.background='var(--ink)';b.onclick=()=>{color=b.dataset.c;document.querySelectorAll('.swatch').forEach(x=>x.setAttribute('aria-pressed',x===b))}});
+window.addEventListener('resize',()=>{if(!$('v-write').hidden)sizePad()});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>sizePad());
+
+/* ---------- sets ---------- */
+function renderFilters(){
+  $('filters').innerHTML=LEVELS.map(k=>`<button class="chip" data-k="${k}" aria-pressed="${k===level}">${LV[k]} <small>${k==='ALL'?W.length:W.filter(x=>x.lv===k).length}</small></button>`).join('');
+}
+$('filters').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b||b.dataset.k===level)return;level=b.dataset.k;store.set('level',level);renderFilters();resetAll();preload()});
+
+/* ---------- tabs ---------- */
+function show(v){['home','list'].forEach(n=>{$('v-'+n).hidden=n!==v;$('tab-'+n).setAttribute('aria-selected',n===v)});stopSpeak();if(v==='list')renderList();else openStep(curStep||getRound().step)}
+['home','list'].forEach(n=>$('tab-'+n).addEventListener('click',()=>show(n)));
+
+/* ---------- rounds: 20 words, ① learn → ② test → ③ write the missed words ---------- */
+const ROUND=20;
+let rounds=store.get('rounds',{});
+function newRound(prev){const pp=pool();let words;
+  if(pp.length<=ROUND)words=shuffle(pp).map(x=>x.w);
+  else{const pick=new Set(),take=(arr,n)=>{const out=[];for(const x of arr){if(out.length>=n)break;if(!pick.has(x.w)){pick.add(x.w);out.push(x)}}return out};
+    const due=take(shuffle(pp.filter(x=>learning[x.w]!=null&&learning[x.w]<=rc)),5);
+    const wr=take(shuffle(pp.filter(x=>wrong.has(x.w))),5);
+    const rest=ROUND-due.length-wr.length;
+    const nw=take(shuffle(pp.filter(x=>!seen.has(x.w))),rest);
+    const more=take(shuffle(pp.filter(x=>learning[x.w]!=null)).concat(shuffle(pp.filter(x=>stateOf(x.w)==='known'))),rest-nw.length);
+    words=shuffle([...due,...wr,...nw,...more]).map(x=>x.w)}
+  const r={n:(prev?prev.n:0)+1,words,step:'learn',li:0,fix:[],fixed:[],hist:prev&&prev.hist?prev.hist:[]};
+  rounds[level]=r;store.set('rounds',rounds);return r}
+function getRound(){let r=rounds[level];const ws=new Set(pool().map(x=>x.w));
+  if(!r||!Array.isArray(r.words)||!r.words.length||!r.words.every(w=>ws.has(w)))r=newRound(r&&r.hist?r:null);
+  if(!r.step){const st=r.st||{};r.fix=r.fix||[];r.fixed=r.wd||[];r.step=st.test?(r.fix.length&&!st.write?'fix':'done'):'learn';r.li=0;delete r.st;delete r.wd;store.set('rounds',rounds)}
+  return r}
+function saveRound(){store.set('rounds',rounds)}
+const byW=w=>W.find(x=>x.w===w&&(level==='ALL'||x.lv===level))||W.find(x=>x.w===w);
+function roundWords(){return getRound().words.map(byW).filter(Boolean)}
+
+let curStep=null;
+function renderStepper(){const r=getRound(),s=r.step,done={learn:s!=='learn',test:s==='fix'||s==='done',fix:s==='done'};
+  const can={learn:true,test:s!=='fix',fix:s==='fix'||s==='done'};
+  const lab={learn:'① ท่องจำ',test:'② สอบ',fix:r.fix.length&&s!=='learn'&&s!=='test'?`③ ฝึกคำที่ผิด ${r.fixed.length}/${r.fix.length}`:'③ ฝึกคำที่ผิด'};
+  $('stepper').innerHTML=`<span class="rn">รอบที่ ${r.n}${s==='done'?' · จบแล้ว':''}</span>`+['learn','test','fix'].map((k,i)=>`${i?'<span class="arr">›</span>':''}<button class="rs${done[k]?' done':''}${curStep===k?' cur':''}" data-step="${k}" ${can[k]?'':'disabled'}>${lab[k]}${done[k]?' ✓':''}</button>`).join('')+
+    (s==='done'?`<span class="hist">กด ① หรือ ② เพื่อเริ่มรอบที่ ${r.n+1} ได้เลย</span>`:'')+(r.hist.length?`<span class="hist">ผลแต่ละรอบ: ${r.hist.slice(-8).map(h=>`รอบ ${h.n}: <b>${h.s}/${h.m||20}</b>`).join(' · ')}</span>`:'')}
+$('stepper').addEventListener('click',e=>{const b=e.target.closest('[data-step]');if(!b||b.disabled)return;const k=b.dataset.step;
+  if(getRound().step==='done'&&(k==='learn'||k==='test')){newRound(getRound());resetTest();openStep(k);window.scrollTo(0,0);return}openStep(k)});
+function openStep(s){const r=getRound();if(s==='test'&&!(r.step==='learn'||r.step==='test'))s=r.step==='done'?'done':'fix';if(s==='fix'&&r.step==='done')s='done';
+  curStep=s;stopSpeak();
+  $('v-learn').hidden=s!=='learn';$('v-test').hidden=s!=='test';$('v-write').hidden=s!=='fix';$('v-done').hidden=s!=='done';
+  if(s==='learn'){lDeck=roundWords();li=Math.min(r.li||0,lDeck.length-1);lLoad()}
+  if(s==='test'){if($('tRun').hidden&&$('tDone').hidden)$('tStart').hidden=false;if(!$('tRun').hidden)placePad('test')}
+  if(s==='fix'){placePad('write');wDeck=fixDeck();wi=0;wLoad();requestAnimationFrame(sizePad)}
+  if(s==='done')renderDone();
+  renderStepper()}
+
+/* ---------- ① learn ---------- */
+let lDeck=[],li=0;
+function lLoad(){const x=lDeck[li];if(!x)return;const r=getRound();r.li=li;saveRound();
+  $('lLvl').textContent=LV[x.lv];$('lCount').textContent=`คำที่ ${li+1} / ${lDeck.length}`;$('lWord').textContent=x.w;$('lRead').textContent=x.read;$('lPos').textContent=x.pos;$('lMean').textContent=x.mean;$('lSent').innerHTML=hiSent(x);$('lTip').hidden=!x.tip;$('lTip').textContent=x.tip;$('lLetters').innerHTML=letters(x.w);
+  const last=li===lDeck.length-1;$('lNext').textContent=last?'ท่องครบแล้ว ไปสอบ →':'คำถัดไป →';$('lPrev').disabled=li===0}
+$('lSay').onclick=()=>{const x=lDeck[li];if(x)speak([cW(x),cS(x)])};
+$('lPrev').onclick=()=>{if(li>0){li--;lLoad()}};
+$('lNext').onclick=()=>{if(li<lDeck.length-1){li++;lLoad();return}const r=getRound();if(r.step==='learn'){r.step='test';saveRound()}openStep('test')};
+
+/* ---------- ② test ---------- */
+let tDeck=[],ti=0,tAns=[],tMark=[],tStartT=0,tTimer=null,tSaved=false;
+function placePad(where){const box=$('padBox'),slot=$(where==='test'?'tPadSlot':'wPadSlot');if(box.parentNode!==slot){slot.appendChild(box);requestAnimationFrame(sizePad)}}
+function tPlay(){const x=tDeck[ti];speak([cW(x),cW(x),cS(x),cS(x)])}
+function snap(){if(!strokes.length)return null;const w=600,h=Math.round(ic.height*w/ic.width)||200;const cv=document.createElement('canvas');cv.width=w;cv.height=h;cv.getContext('2d').drawImage(ic,0,0,w,h);return cv.toDataURL('image/png')}
+function resetTest(){clearInterval(tTimer);$('tRun').hidden=true;$('tDone').hidden=true;$('tStart').hidden=false;placePad('write')}
+$('tGo').onclick=()=>{const r=getRound();if(r.step==='learn'){r.step='test';saveRound()}
+  tDeck=shuffle(roundWords());ti=0;tAns=[];tMark=[];tSaved=false;$('tStart').hidden=true;$('tDone').hidden=true;$('tRun').hidden=false;placePad('test');
+  tStartT=Date.now();clearInterval(tTimer);$('tTime').textContent='⏱ 0:00';tTimer=setInterval(()=>{const s=(Date.now()-tStartT)/1000|0;$('tTime').textContent=`⏱ ${s/60|0}:${String(s%60).padStart(2,'0')}`},1000);tShow();renderStepper()};
+function tShow(){$('tCount').textContent=`ข้อ ${ti+1} / ${tDeck.length}`;$('tHint').hidden=true;strokes=[];redraw();$('tSubmit').textContent=ti===tDeck.length-1?'ส่งคำตอบ ✓':'คำถัดไป →';tPlay()}
+$('tPlay').onclick=tPlay;
+$('tPos').onclick=()=>{const x=tDeck[ti];$('tHint').textContent=posName(x.pos);$('tHint').hidden=false};
+$('tSubmit').onclick=()=>{tAns.push(snap());tMark.push(tAns[ti]?null:0);ti++;if(ti<tDeck.length)tShow();else tFinish()};
+function tSummary(){const marked=tMark.filter(m=>m!==null).length,ok=tMark.filter(m=>m===1).length;
+  $('tSum').innerHTML=tSaved?`<div class="score">${ok} / ${tDeck.length}</div><div>ถูก <b>${ok}</b> จาก ${tDeck.length} คำ · ใช้เวลา ${esc($('tTime').textContent.replace('⏱ ',''))} นาที</div>`
+    :`<div><b>ตรวจคำตอบ</b> เทียบลายมือกับเฉลย แล้วกด ✓ หรือ ✗ ทุกข้อ</div><div class="counter">ตรวจแล้ว ${marked} / ${tDeck.length} ข้อ · ถูก ${ok}</div>`;
+  $('tSave').disabled=marked<tDeck.length;$('tSave').hidden=tSaved;$('tAgain').hidden=!tSaved;
+  if(tSaved){const r=getRound();$('tAgain').textContent=r.step==='fix'?`③ ไปฝึกเขียนคำที่ผิด (${r.fix.length} คำ) →`:`🎉 ถูกหมด! ไปหน้าสรุปรอบ →`}}
+function tFinish(){clearInterval(tTimer);stopSpeak();placePad('write');$('tRun').hidden=true;$('tDone').hidden=false;
+  $('tRes').innerHTML=tDeck.map((x,i)=>`<div class="ti${tMark[i]===1?' y':tMark[i]===0?' n':''}" data-i="${i}"><span class="no">${i+1}</span><div>
+    ${tAns[i]?`<img class="hw" src="${tAns[i]}" alt="ลายมือข้อ ${i+1}">`:'<div class="hwe">(ไม่ได้เขียน)</div>'}
+    <div class="key"><button class="say" data-w="${x.i}" aria-label="ฟังเสียง">🔊</button><b>${esc(x.w)}</b><span class="read">${esc(x.read)}</span><span class="pos">${esc(x.pos)}</span><span>${esc(x.mean)}</span></div>
+    <div class="mk"><button class="btn ok" data-m="1" aria-pressed="${tMark[i]===1}">✓ ถูก</button><button class="btn bad" data-m="0" aria-pressed="${tMark[i]===0}">✗ ผิด</button></div></div></div>`).join('');
+  tSummary();window.scrollTo(0,0)}
+$('tRes').addEventListener('click',e=>{const s=e.target.closest('[data-w]');if(s){speak([cW(W[+s.dataset.w])]);return}
+  const b=e.target.closest('[data-m]');if(!b||tSaved)return;const it=b.closest('.ti'),i=+it.dataset.i,m=+b.dataset.m;tMark[i]=m;
+  it.classList.toggle('y',m===1);it.classList.toggle('n',m===0);it.querySelectorAll('[data-m]').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.m===m));tSummary()});
+$('tSave').onclick=()=>{if(tSaved||tMark.some(m=>m===null))return;tSaved=true;let ok=0;rc++;
+  tDeck.forEach((x,i)=>{const w=x.w;seen.add(w);tally(tMark[i]===1);
+    if(tMark[i]===1){ok++;if(wrong.has(w)){wrong.delete(w);learning[w]=rc+1}else if(learning[w]!=null)delete learning[w]}
+    else{wrong.add(w);delete learning[w]}});
+  saveMem();const r=getRound();
+  store.set('tests',store.get('tests',[]).concat([{d:Date.now(),s:ok,m:tDeck.length,lv:level,r:r.n,bad:tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w)}]).slice(-30));
+  r.hist=r.hist.concat([{n:r.n,s:ok,m:tDeck.length,d:Date.now()}]).slice(-50);r.fix=tDeck.filter((x,i)=>tMark[i]!==1).map(x=>x.w);r.fixed=[];r.step=r.fix.length?'fix':'done';saveRound();
+  $('tRes').querySelectorAll('.mk .btn').forEach(b=>b.disabled=true);tSummary();renderStepper();window.scrollTo(0,0)};
+$('tAgain').onclick=()=>{resetTest();openStep(getRound().step)};
+
+/* ---------- ③ write the missed words ---------- */
+let wDeck=[],wi=0;
+function fixDeck(){const r=getRound();return shuffle(r.fix.filter(w=>!r.fixed.includes(w)).map(byW).filter(Boolean))}
+function wCur(){return wDeck[wi]}
+function wLoad(){const r=getRound();
+  const x=wCur();strokes=[];redraw();$('wAns').hidden=true;$('wHint').hidden=true;
+  $('wCount').textContent=`รอบที่ ${r.n} · ฝึกคำที่ผิด เหลือ ${wDeck.length} คำ`;$('wScore').textContent=`ถูกแล้ว ${r.fixed.length} / ${r.fix.length}`;
+  if(!x){$('wLvl').textContent='';setW(true);return}
+  setW(false);$('wLvl').textContent=LV[x.lv]}
+function setW(dis){['wPlay','wWord','wHintPos','wHintSent','wHintMean','wHintRead','reveal','wSkip'].forEach(id=>$(id).disabled=dis)}
+function hint(html){$('wHint').innerHTML=html;$('wHint').hidden=false}
+$('wPlay').onclick=()=>{const x=wCur();if(x)speak([cW(x),cW(x),cS(x),cS(x),cW(x)])};
+$('wWord').onclick=()=>{const x=wCur();if(x)speak([cW(x)])};
+$('wHintPos').onclick=()=>{const x=wCur();hint(`<b>Part of speech:</b> ${esc(posName(x.pos))} (${esc(x.pos)})`);speak([cP(x)])};
+$('wHintSent').onclick=()=>{const x=wCur();hint(`<span class="sent">${maskSent(x)}</span>`);speak([cS(x)])};
+$('wHintMean').onclick=()=>{const x=wCur();hint(`<b>ความหมาย:</b> ${esc(x.mean)}`)};
+$('wHintRead').onclick=()=>{const x=wCur();hint(`<b>คำอ่าน:</b> <span class="read">${esc(x.read)}</span>`)};
+$('reveal').onclick=()=>{const x=wCur();if(!x)return;$('aWord').textContent=x.w;$('aLetters').innerHTML=letters(x.w);$('aRead').textContent=x.read;$('aPos').textContent=x.pos;$('aMean').textContent=x.mean;$('aTip').hidden=!x.tip;$('aTip').textContent=x.tip;$('wAns').hidden=false;$('wAns').scrollIntoView({block:'nearest',behavior:'smooth'})};
+function wNext(){if(wi>=wDeck.length)wi=0;wLoad()}
+$('markOk').onclick=()=>{const x=wCur();if(!x)return;const r=getRound();tally(1);
+  if(wrong.has(x.w)){wrong.delete(x.w);learning[x.w]=rc+1}saveMem();
+  if(!r.fixed.includes(x.w))r.fixed.push(x.w);wDeck.splice(wi,1);
+  if(r.fix.every(w=>r.fixed.includes(w))){r.step='done';saveRound();openStep('done');return}
+  saveRound();renderStepper();wNext()};
+$('markBad').onclick=()=>{const x=wCur();if(!x)return;tally(0);wDeck.push(wDeck.splice(wi,1)[0]);wNext()};
+$('wSkip').onclick=()=>{if(wDeck.length>1){wDeck.push(wDeck.splice(wi,1)[0])}wNext()};
+
+/* ---------- round summary ---------- */
+function renderDone(){const r=getRound(),h=r.hist[r.hist.length-1],p=pool(),kn=p.filter(x=>stateOf(x.w)==='known').length;
+  $('doneBody').innerHTML=`<h2 class="ph">🎉 จบรอบที่ ${r.n}</h2>`+(h?`<div class="tsum"><div class="score">${h.s} / ${h.m||20}</div><div>คะแนนสอบรอบนี้${r.fix.length?` · ฝึกคำที่ผิดครบ ${r.fix.length} คำแล้ว`:''}</div></div>`:'')+
+    `<p class="pd" style="margin-top:12px">${LV[level]}: จำได้แล้ว <b>${kn}</b> / ${p.length} คำ</p>`;
+  $('nextRound').textContent=`▶ เริ่มรอบที่ ${r.n+1}`+(p.length>ROUND?' (คำใหม่ 20 คำ)':'')}
+$('nextRound').onclick=()=>{newRound(getRound());resetTest();openStep('learn');window.scrollTo(0,0)};
+
+/* ---------- word list ---------- */
+let shown=200,lf='all';
+const ST={new:['','ยังไม่ได้ฝึก'],wrong:['✗','ต้องทบทวน'],learning:['◐','กำลังจำ (รอทวนอีกครั้ง)'],known:['✓','จำได้แล้ว']};
+function renderList(){const q=$('q').value.trim().toLowerCase();const base=pool();const cnt={all:base.length,new:0,wrong:0,learning:0,known:0};base.forEach(x=>cnt[stateOf(x.w)]++);
+  $('lf').innerHTML=[['all','ทั้งหมด'],['new','ยังไม่ได้ฝึก'],['wrong','✗ ต้องทบทวน'],['learning','◐ กำลังจำ'],['known','✓ จำได้แล้ว']].map(([k,l])=>`<button class="chip" data-f="${k}" aria-pressed="${k===lf}">${l} <small>${cnt[k]}</small></button>`).join('');
+  const p=base.filter(x=>(lf==='all'||stateOf(x.w)===lf)&&(!q||x.w.toLowerCase().includes(q)||x.mean.includes(q)));
+  $('qCount').textContent=`แสดง ${p.length} คำ`;
+  $('tbody').innerHTML=p.slice(0,shown).map(x=>{const s=stateOf(x.w);return`<tr><td class="st st-${s}" title="${ST[s][1]}">${ST[s][0]}</td><td class="w"><button class="say" data-i="${x.i}" aria-label="ฟังเสียง ${esc(x.w)}">🔊</button>${esc(x.w)}<div class="rd">${esc(x.read)} · <i>${esc(x.pos)}</i></div></td><td>${esc(x.read)}</td><td class="pos">${esc(x.pos)}</td><td>${esc(x.mean)}</td><td><span class="lvl">${x.lv==='X'?'ยาก+':x.lv==='K'?'แข่ง':x.lv}</span></td></tr>`}).join('')||`<tr><td colspan="6" class="empty">ไม่พบคำ</td></tr>`;
+  $('more').hidden=p.length<=shown}
+$('q').addEventListener('input',()=>{shown=200;renderList()});
+$('more').onclick=()=>{shown+=200;renderList()};
+$('lf').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;lf=b.dataset.f;shown=200;renderList()});
+$('tbody').addEventListener('click',e=>{const b=e.target.closest('.say');if(b){const x=W[+b.dataset.i];speak([cW(x)])}});
+
+function resetAll(){resetTest();curStep=null;renderHead();const r=getRound();if(!$('v-list').hidden)renderList();else openStep(r.step)}
+
+/* ---------- dialogs ---------- */
+function openDlg(d){try{d.showModal()}catch(e){d.setAttribute('open','')}}
+function closeDlg(d){try{d.close()}catch(e){d.removeAttribute('open')}}
+[$('setDlg'),$('helpDlg')].forEach(d=>{d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-close]'))closeDlg(d)})});
+$('setBtn').onclick=()=>openDlg($('setDlg'));
+$('helpBtn').onclick=()=>openDlg($('helpDlg'));
+$('helpDlg').addEventListener('close',()=>store.set('seenHelp',2));
+if(store.get('seenHelp',0)<2)setTimeout(()=>openDlg($('helpDlg')),300);
+renderFilters();resetAll();preload();requestAnimationFrame(sizePad);
+};
+</script>
+
+<dialog id="loginDlg">
+  <h2>👋 ใส่ชื่อก่อนเริ่มฝึก</h2>
+  <div class="field"><label for="loginCls">ชั้น</label><select id="loginCls"><option>ม.1</option><option>ม.2</option><option>ม.3</option><option>ครู/อื่นๆ</option></select></div>
+  <div class="field"><label for="loginName">ชื่อ-นามสกุล</label><input type="text" id="loginName" placeholder="เช่น สมชาย ใจดี" autocomplete="off" maxlength="60"></div>
+  <p class="counter" style="margin:0 0 14px">พิมพ์ชื่อเดิมทุกครั้ง ข้อมูลจะต่อจากเดิม เปิดเครื่องไหนก็ได้</p>
+  <p class="notice" id="loginErr" hidden></p>
+  <div class="row grow"><button class="btn primary big" id="loginGo">เริ่มฝึก →</button></div>
+</dialog>
+<dialog id="userDlg">
+  <h2>👤 <span id="userDlgName"></span></h2>
+  <p class="counter" style="margin:0 0 14px">ข้อมูลบันทึกออนไลน์ไว้กับชื่อนี้แล้ว</p>
+  <div class="row grow"><button class="btn" data-close>ปิด</button><button class="btn primary" id="switchUser">เปลี่ยนผู้ใช้</button></div>
+</dialog>
+<script>
+(()=>{
+const MODE='__MODE__';
+if(MODE!=='cloud'){window.__sbStart();return}
+const $=id=>document.getElementById(id);
+$('teacherLink').hidden=false;
+// newer voice (generated on the server) replaces the built-in audio index when available
+const audP=(async()=>{try{const c=new AbortController();setTimeout(()=>c.abort(),5000);const r=await fetch('/api/audio/index.json',{signal:c.signal});if(r.ok){const j=await r.json();if(j&&j.f&&j.f.length&&j.c)$('audio').textContent=JSON.stringify(j)}}catch(e){}})();
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const clean=s=>s.normalize('NFC').trim().replace(/\s+/g,' ');
+let prof=null,S={},timer=null,dirty=false,busy=false;
+const stat=t=>{$('syncStat').textContent=t};
+const ck=()=>'sbc_'+prof.cls+'|'+prof.name.toLowerCase();
+const body=()=>JSON.stringify({cls:prof.cls,name:prof.name,state:S});
+async function push(){
+  if(!dirty||busy)return;dirty=false;busy=true;stat('☁️ กำลังบันทึก…');
+  try{const r=await fetch('/api/progress',{method:'POST',headers:{'content-type':'application/json'},body:body()});if(!r.ok)throw 0;stat('☁️ บันทึกแล้ว')}
+  catch(e){dirty=true;stat('⚠️ ยังไม่ได้บันทึกออนไลน์ จะลองใหม่อัตโนมัติ');clearTimeout(timer);timer=setTimeout(push,8000)}
+  finally{busy=false;if(dirty&&!timer)timer=setTimeout(push,1500)}
+}
+window.SBStore={get(k,d){return k in S?S[k]:d},
+  set(k,v){S[k]=v;S.u=Date.now();dirty=true;LS.set(ck(),JSON.stringify(S));clearTimeout(timer);timer=setTimeout(()=>{timer=null;push()},1500)}};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&prof&&dirty){dirty=false;try{navigator.sendBeacon('/api/progress',new Blob([body()],{type:'application/json'}))}catch(e){dirty=true}}});
+async function login(cls,name){
+  prof={cls,name:clean(name)};
+  let local=null;try{local=JSON.parse(LS.get(ck())||'null')}catch(e){}
+  let remote=null,ok=false;
+  try{const r=await fetch('/api/progress?cls='+encodeURIComponent(cls)+'&name='+encodeURIComponent(prof.name),{cache:'no-store'});if(r.ok){remote=(await r.json()).state||null;ok=true}}catch(e){}
+  if(!ok&&!local)throw new Error('offline');
+  if(remote&&(!local||(remote.u||0)>=(local.u||0)))S=remote;else{S=local||{};if(ok&&local)dirty=true}
+  LS.set(ck(),JSON.stringify(S));LS.set('sb_profile',JSON.stringify({cls,name:prof.name}));
+  stat(ok?'☁️ บันทึกออนไลน์':'⚠️ ออฟไลน์ ใช้ข้อมูลในเครื่องก่อน');
+  $('userName').textContent=prof.name.split(' ')[0];$('userBtn').hidden=false;$('userDlgName').textContent=prof.name+' ('+prof.cls+')';
+  if(dirty)setTimeout(push,500);
+  await audP;
+  window.__sbStart();
+}
+const dlg=$('loginDlg');dlg.addEventListener('cancel',e=>e.preventDefault());
+function ask(err){$('loginErr').hidden=!err;$('loginErr').textContent=err||'';try{dlg.showModal()}catch(e){dlg.setAttribute('open','')}setTimeout(()=>$('loginName').focus(),50)}
+async function go(){const name=clean($('loginName').value),cls=$('loginCls').value;
+  if(name.length<2){$('loginErr').hidden=false;$('loginErr').textContent='กรุณาพิมพ์ชื่อ';return}
+  $('loginGo').disabled=true;$('loginGo').textContent='กำลังโหลดข้อมูล…';
+  try{await login(cls,name);try{dlg.close()}catch(e){dlg.removeAttribute('open')}}
+  catch(e){$('loginErr').hidden=false;$('loginErr').textContent='เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่'}
+  finally{$('loginGo').disabled=false;$('loginGo').textContent='เริ่มฝึก →'}}
+$('loginGo').onclick=go;$('loginName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go()}});
+const ud=$('userDlg');$('userBtn').onclick=()=>{try{ud.showModal()}catch(e){ud.setAttribute('open','')}};
+ud.addEventListener('click',e=>{if(e.target===ud||e.target.closest('[data-close]')){try{ud.close()}catch(_){ud.removeAttribute('open')}}});
+$('switchUser').onclick=async()=>{if(dirty){clearTimeout(timer);await push()}LS.del('sb_profile');location.reload()};
+let saved=null;try{saved=JSON.parse(LS.get('sb_profile')||'null')}catch(e){}
+if(saved&&saved.name){login(saved.cls,saved.name).catch(()=>{$('loginCls').value=saved.cls;$('loginName').value=saved.name;ask('เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่')})}
+else ask();
+})();
+</script>

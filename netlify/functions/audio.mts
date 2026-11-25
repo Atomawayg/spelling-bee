@@ -10,7 +10,7 @@ export default async (req: Request, context: Context) => {
     if (!v) return Response.json({ error: "not ready" }, { status: 404, headers: { "cache-control": "no-store" } });
     return Response.json(v, { headers: { "cache-control": "public, max-age=60" } });
   }
-  if (parts.length === 2 && /^[a-z0-9-]+$/.test(parts[0]) && /^[a-z0-9]+\.mp3$/.test(parts[1])) {
+  if (parts.length === 2 && /^[a-z0-9-]+$/.test(parts[0]) && /^[a-z0-9_-]+\.mp3$/.test(parts[1])) {
     const b = await getStore(`audio-${parts[0]}`).get(`bundle/${parts[1]}`, { type: "arrayBuffer" });
     if (!b) return new Response("not found", { status: 404 });
     return new Response(b, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=31536000, immutable" } });

@@ -5,7 +5,7 @@ export const VOICE = "en-US-JennyNeural";
 export const RATE = "-10%";
 export const VERSION = "jenny-10"; // change to regenerate everything into fresh stores
 
-const POSN: Record<string, string> = { "n.": "noun", "v.": "verb", "adj.": "adjective", "adv.": "adverb", "prep.": "preposition", "conj.": "conjunction" };
+const POSN: Record<string, string> = { "n.": "noun", "v.": "verb", "adj.": "adjective", "adv.": "adverb", "prep.": "preposition", "conj.": "conjunction", "pron.": "pronoun", "det.": "determiner", "exclam.": "exclamation" };
 const posName = (p: string) => p.split("/").map((s) => POSN[s.trim()] ?? s).join(" or ");
 const splitTip = (s: string) => {
   if (!s.startsWith("Remember")) return s;
@@ -29,10 +29,12 @@ words.forEach((x, i) => {
   CLIPS.push({ name: `s${i}`, text: splitTip(x[4]) || `The word is ${x[0]}.` });
 });
 
-export const BUNDLES: { file: string; names: string[] }[] = [{ file: "c.mp3", names: [...seenPos] }];
+export const BUNDLES: { file: string; names: string[] }[] = [{ file: `c-${seenPos.size}.mp3`, names: [...seenPos] }];
 for (const lv of ["X", "B2", "C1", "B1", "K"]) {
   const idx = words.map((x, i) => (x[5] === lv ? i : -1)).filter((i) => i >= 0);
   for (let k = 0; k < idx.length; k += 100) {
-    BUNDLES.push({ file: `${lv.toLowerCase()}${k / 100}.mp3`, names: idx.slice(k, k + 100).flatMap((i) => [`w${i}`, `s${i}`]) });
+    const names = idx.slice(k, k + 100).flatMap((i) => [`w${i}`, `s${i}`]);
+    // the clip count is part of the name, so a bundle that grows gets a new URL (bundles are cached forever)
+    BUNDLES.push({ file: `${lv.toLowerCase()}_${k / 100}-${names.length}.mp3`, names });
   }
 }
